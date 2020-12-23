@@ -14,6 +14,9 @@ namespace Fiar
         /// <returns></returns>
         public static IServiceCollection AddProjectBaseModules(this IServiceCollection services)
         {
+            // Bind Data Validation Manager
+            services.AddTransient<IDataValidationManager, BaseDataValidationManager>();
+
             // Bind email sender
             services.AddTransient<IEmailSender, BaseEmailSender>();
 

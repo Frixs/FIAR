@@ -15,7 +15,7 @@ namespace Fiar
         /// <typeparam name="TBuilder">Builder specification (generic optionally)</typeparam>
         /// <param name="builder">The builder</param>
         /// <returns>The builder for chaining</returns>
-        public static TBuilder UseServerRoomOptions<TBuilder>(this TBuilder builder)
+        public static TBuilder UseFiarOptions<TBuilder>(this TBuilder builder)
             where TBuilder : DbContextOptionsBuilder
         {
             // Setup connection based on desired DB technology

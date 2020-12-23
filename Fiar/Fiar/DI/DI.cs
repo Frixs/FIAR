@@ -30,6 +30,11 @@ namespace Fiar
         public static IConfigBox ConfigBox => Framework.Service<IConfigBox>();
 
         /// <summary>
+        /// The transient of the <see cref="IDataValidationManager"/>
+        /// </summary>
+        public static IDataValidationManager DataValidationManager => Framework.Service<IDataValidationManager>();
+
+        /// <summary>
         /// The transient of the <see cref="IEmailSender"/>
         /// </summary>
         public static IEmailSender Email => Framework.Service<IEmailSender>();

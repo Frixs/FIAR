@@ -1,6 +1,7 @@
 using Ixs.DNA;
 using Ixs.DNA.AspNet;
 using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.CookiePolicy;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
@@ -33,11 +34,11 @@ namespace Fiar
             services.AddDbContext<ApplicationDbContext>(options =>
             {
                 // Use the settings we set
-                options.UseServerRoomOptions();
+                options.UseFiarOptions();
             });
             // Add function to create transient DB context
             services.AddTransient((provider) => new Func<ApplicationDbContext>(() => new ApplicationDbContext(
-                new DbContextOptionsBuilder<ApplicationDbContext>().UseServerRoomOptions().Options
+                new DbContextOptionsBuilder<ApplicationDbContext>().UseFiarOptions().Options
                 )));
 
             // Register Hosted Services here
@@ -85,12 +86,10 @@ namespace Fiar
             // Add authorization policy
             services.AddAuthorization(options =>
             {
-                options.AddPolicy(PolicyNames.ReadOnlyLevel,
-                    builder => builder.RequireRole(Policies.Dict[PolicyNames.ReadOnlyLevel]));
-                options.AddPolicy(PolicyNames.ControlLevel,
-                    builder => builder.RequireRole(Policies.Dict[PolicyNames.ControlLevel]));
-                options.AddPolicy(PolicyNames.AdminLevel,
-                    builder => builder.RequireRole(Policies.Dict[PolicyNames.AdminLevel]));
+                options.AddPolicy(PolicyNames.PlayerLevel,
+                    builder => builder.RequireRole(Policies.Dict[PolicyNames.PlayerLevel]));
+                options.AddPolicy(PolicyNames.AdministratorLevel,
+                    builder => builder.RequireRole(Policies.Dict[PolicyNames.AdministratorLevel]));
             });
 
             // Change policy
@@ -121,7 +120,7 @@ namespace Fiar
             // Alter application cookie info
             services.ConfigureApplicationCookie(options =>
             {
-                options.Cookie.Name = "ServerRoom.AuthCookieAspNetCore";
+                options.Cookie.Name = "Fiar.AuthCookieAspNetCore";
 
                 // Redirect to /login
                 options.LoginPath = WebRoutes.Login;
