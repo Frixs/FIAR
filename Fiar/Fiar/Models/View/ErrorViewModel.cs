@@ -1,6 +1,4 @@
-using System;
-
-namespace Fiar.Models
+namespace Fiar.ViewModels
 {
     public class ErrorViewModel
     {

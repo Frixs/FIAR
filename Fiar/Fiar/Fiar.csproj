@@ -22,6 +22,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Folder Include="Models\Data\" />
     <Folder Include="wwwroot\js\" />
   </ItemGroup>
 

@@ -4,8 +4,15 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>@ViewData["Title"] - Fiar</title>
-    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
-    <link rel="stylesheet" href="~/css/site.css" />
+
+    <!-- Favicon -->
+    <link rel="icon" type="image/x-icon" href="~/favicon.ico">
+
+    <!-- Include vendor CSS -->
+    <link rel="stylesheet" href="~/vendor/vendor.min.css" />
+
+    <!-- Include app CSS -->
+    <link rel="stylesheet" href="~/css/app.min.css" />
 </head>
 <body>
     <header>
@@ -40,9 +47,23 @@
             &copy; 2020 - Fiar - <a asp-area="" asp-controller="Home" asp-action="Privacy">Privacy</a>
         </div>
     </footer>
-    <script src="~/lib/jquery/dist/jquery.min.js"></script>
-    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="~/js/site.js" asp-append-version="true"></script>
+
+
+
+    <!-- Include vendor JS -->
+    <script src="~/vendor/vendor.min.js" asp-append-version="true"></script>
+
+    <!-- Include own JS -->
+    <script src="~/js/DateFunctions.js"></script>
+
+    <!-- Tooltip -->
+    <script>
+        $('body').tooltip({
+            selector: '[data-toggle=tooltip]'
+        });
+    </script>
+
+    <!-- Include Specific Page Scripts -->
     @RenderSection("Scripts", required: false)
 </body>
 </html>
