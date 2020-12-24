@@ -10,9 +10,9 @@ namespace Fiar
         #region Public Properties
 
         /// <summary>
-        /// <see cref="UserDataModel.AlertSuppressed"/>
+        /// <see cref="UserDataModel.Nickname"/>
         /// </summary>
-        public bool AlertSuppressed { get; set; } = false;
+        public string Nickname { get; set; }
 
         #endregion
     }

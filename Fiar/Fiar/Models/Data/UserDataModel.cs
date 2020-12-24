@@ -1,5 +1,4 @@
 ﻿using Fiar.Attributes;
-using Ixs.DNA;
 using System.Collections.Generic;
 
 namespace Fiar
@@ -48,6 +47,23 @@ namespace Fiar
 
         /// <summary>
         /// Limit property for this data model property
+        /// </summary>
+        public static readonly bool Nickname_IsRequired = true;
+
+        /// <summary>
+        /// Limit property for this data model property
+        /// </summary>
+        public static readonly short Nickname_MaxLength = 16;
+
+        /// <summary>
+        /// Limit property for this data model property
+        /// </summary>
+        public static readonly string Nickname_CanContainRegex = @"^[a-zA-Z0-9_-]*$";
+
+
+
+        /// <summary>
+        /// Limit property for this data model property
         /// Special case - not part of this data model
         /// </summary>
         public static readonly short Password_MinLength = 6;
@@ -87,32 +103,19 @@ namespace Fiar
         public string Email { get; set; }
 
         /// <summary>
-        /// Indicates if the user has suppressed alerts
+        /// The users nickname
         /// </summary>
-        [ValidateIgnore]
-        public bool AlertSuppressed { get; set; }
+        [ValidateString(nameof(Nickname), typeof(UserDataModel),
+            pIsRequired: nameof(Nickname_IsRequired),
+            pMaxLength: nameof(Nickname_MaxLength),
+            pCanContainRegex: nameof(Nickname_CanContainRegex))]
+        public bool Nickname { get; set; }
 
         /// <summary>
         /// THe users role list
         /// </summary>
         [ValidateIgnore]
         public List<string> RoleList { get; set; }
-
-        #endregion
-
-        #region Helper Properties
-
-        /// <summary>
-        /// Indicates the users is valid for mail sending
-        /// </summary>
-        [ValidateIgnore]
-        public bool IsValidMailRecipient => !AlertSuppressed && MailAlerts;
-
-        /// <summary>
-        /// Indicates the user is valid for SMS sending
-        /// </summary>
-        [ValidateIgnore]
-        public bool IsValidSmsRecipient => !AlertSuppressed && !PhoneNumber.IsNullOrEmpty();
 
         #endregion
     }
