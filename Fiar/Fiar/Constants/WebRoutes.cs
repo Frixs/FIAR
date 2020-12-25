@@ -39,5 +39,25 @@
         /// The route to the web page
         /// </summary>
         public const string Error500 = "/500";
+
+        /// <summary>
+        /// The route to the web request method
+        /// </summary>
+        public const string InitializeRequest = "/request/initialize";
+
+        /// <summary>
+        /// The route to the web request method
+        /// </summary>
+        public const string LoginRequest = "/request/login";
+
+        /// <summary>
+        /// The route to the web request method
+        /// </summary>
+        public const string LogoutRequest = "/request/logout";
+
+        /// <summary>
+        /// The route to the web request method
+        /// </summary>
+        public const string RegisterRequest = "/request/register";
     }
 }

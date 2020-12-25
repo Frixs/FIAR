@@ -162,7 +162,6 @@ namespace Fiar
             // Validate user
             if (!typeof(UserDataModel).GetPropertyAttribute<ValidateStringAttribute>(nameof(UserDataModel.Username)).Validate(registerCredentials.Username).Succeeded ||
                 !typeof(UserDataModel).GetPropertyAttribute<ValidateStringAttribute>(nameof(UserDataModel.Email)).Validate(registerCredentials.Email).Succeeded ||
-                /* IsStrictRecipient = IgnoreValidation */
                 registerCredentials.Password == null)
                 // Return failed response
                 return errorResponse;
@@ -188,7 +187,7 @@ namespace Fiar
                 // Generate an email verification code
                 var emailVerificationCode = mUserManager.GenerateEmailConfirmationTokenAsync(newUser);
 
-                // TODO: Email the user the verification code https://youtu.be/iYFP26_zI98?t=2407
+                // TODO: Email the user the verification code (api-side) https://youtu.be/iYFP26_zI98?t=2407
 
                 // Return valid response
                 return new ApiResponse();
