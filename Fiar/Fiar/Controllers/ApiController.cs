@@ -41,11 +41,6 @@ namespace Fiar
         protected RoleManager<IdentityRole> mRoleManager;
 
         /// <summary>
-        /// Injection - <inheritdoc cref="IEmailSender"/>
-        /// </summary>
-        private readonly IEmailSender mEmailSender;
-
-        /// <summary>
         /// Injection - <inheritdoc cref="ILogger"/>
         /// </summary>
         private readonly ILogger mLogger;
@@ -66,13 +61,12 @@ namespace Fiar
         /// <param name="userManager">The Identity user manager</param>
         /// <param name="signInManager">The Identity sign in manager</param>
         /// <param name="roleManager">The Identity role manager</param>
-        public ApiController(ApplicationDbContext context, UserManager<ApplicationUser> userManager, SignInManager<ApplicationUser> signInManager, RoleManager<IdentityRole> roleManager, IConfigBox configBox, IEmailSender emailSender)
+        public ApiController(ApplicationDbContext context, UserManager<ApplicationUser> userManager, SignInManager<ApplicationUser> signInManager, RoleManager<IdentityRole> roleManager, IConfigBox configBox)
         {
             mContext = context;
             mUserManager = userManager;
             mSignInManager = signInManager;
             mRoleManager = roleManager;
-            mEmailSender = emailSender ?? throw new ArgumentNullException(nameof(emailSender));
             mConfigBox = configBox ?? throw new ArgumentNullException(nameof(configBox));
             mLogger = FrameworkDI.Logger ?? throw new ArgumentNullException(nameof(mLogger));
         }
@@ -153,20 +147,10 @@ namespace Fiar
         /// <param name="registerCredentials">The registration details</param>
         /// <returns>Returns the result of the register request</returns>
         [HttpPost]
+        [AllowAnonymous]
         [Route(ApiRoutes.Register)]
         public async Task<ApiResponse> RegisterAsync([FromBody] Put_RegisterCredentialsApiModel registerCredentials)
         {
-            #region Get/Check User
-
-            // Get user by the claims
-            var user = await mUserManager.GetUserAsync(HttpContext.User);
-            // If user does not have authorization...
-            if (!await AuthorizeUserAsync(user, PolicyNames.AdministratorLevel))
-                // Return user auth error response
-                return GetAuthorizationErrorApiResponse(Localization.Resource.AuthError_UserNotFound);
-
-            #endregion
-
             // The error message to user
             var errorResponse = new ApiResponse { ErrorMessage = Localization.Resource.ApiController_ValidationErrorMsg };
 
