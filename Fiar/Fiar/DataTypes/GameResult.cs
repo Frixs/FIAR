@@ -5,8 +5,9 @@
     /// </summary>
     public enum GameResult
     {
-        Draw = 0,
+        None = 0, // Currently in progress
         PlayerOneWon = 1,
         PlayerTwoWon = 2,
+        Draw = 3,
     }
 }

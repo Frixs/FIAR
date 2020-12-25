@@ -8,6 +8,15 @@ namespace Fiar
     /// </summary>
     public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
     {
+        #region Public Properties (User)
+
+        /// <summary>
+        /// The friend user relations
+        /// </summary>
+        public DbSet<FriendUserRelationDataModel> FriendUserRelations { get; set; }
+
+        #endregion
+
         #region Public Properties (Game)
 
         /// <summary>
@@ -19,6 +28,11 @@ namespace Fiar
         /// The game moves for the application
         /// </summary>
         public DbSet<GameMoveDataModel> GameMoves { get; set; }
+
+        /// <summary>
+        /// The game participants
+        /// </summary>
+        public DbSet<GameParticipantDataModel> GameParticipants { get; set; }
 
         #endregion
 
@@ -48,6 +62,28 @@ namespace Fiar
             // Set up indexed/unique columns
             modelBuilder.Entity<ApplicationUser>().HasIndex(o => o.Nickname);
 
+            #region FriendUserRelations
+
+            // Configure FriendUserRelations
+            // ------------------------------
+            //
+            // Set Id as primary key
+            modelBuilder.Entity<FriendUserRelationDataModel>().HasKey(o => o.Id);
+            // Set Foreign Key (user-side)
+            modelBuilder.Entity<FriendUserRelationDataModel>()
+                .HasOne(o => o.User)
+                .WithMany(o => o.Friends)
+                .HasForeignKey(o => o.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+            // Set Foreign Key (friend-side)
+            modelBuilder.Entity<FriendUserRelationDataModel>()
+                .HasOne(o => o.FriendUser)
+                .WithMany(o => o.BeingFriendOfs)
+                .HasForeignKey(o => o.FriendUserId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            #endregion
+
             #region Games
 
             // Configure Games
@@ -60,7 +96,7 @@ namespace Fiar
 
             #endregion
 
-            #region Routines
+            #region GameMoves
 
             // Configure GameMoves
             // ------------------------------
@@ -75,6 +111,24 @@ namespace Fiar
                 .OnDelete(DeleteBehavior.Cascade);
             // Set up indexed/unique columns
             modelBuilder.Entity<GameMoveDataModel>().HasIndex(o => o.Type);
+
+            #endregion
+
+            #region GameParticipants
+
+            // Configure GameParticipants
+            // ------------------------------
+            //
+            // Set Id as primary key
+            modelBuilder.Entity<GameParticipantDataModel>().HasKey(o => o.Id);
+            // Set Foreign Key
+            modelBuilder.Entity<GameParticipantDataModel>()
+                .HasOne(o => o.Game)
+                .WithMany(o => o.Participants)
+                .HasForeignKey(o => o.GameId)
+                .OnDelete(DeleteBehavior.Cascade);
+            // Set up indexed/unique columns
+            modelBuilder.Entity<GameParticipantDataModel>().HasIndex(o => o.Type);
 
             #endregion
         }

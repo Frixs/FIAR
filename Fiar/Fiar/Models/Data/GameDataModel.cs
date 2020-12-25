@@ -25,34 +25,6 @@ namespace Fiar
         public long Id { get; set; }
 
         /// <summary>
-        /// Foreign Key for <see cref="ApplicationUser"/>
-        /// </summary>
-        [ValidateIgnore]
-        public string PlayerOneUserId { get; set; }
-
-        /// <summary>
-        /// Reference to ONE user // Fluent API
-        /// </summary>
-        [System.Text.Json.Serialization.JsonIgnore]
-        [Newtonsoft.Json.JsonIgnore]
-        [ValidateIgnore]
-        public ApplicationUser PlayerOneUser { get; set; }
-
-        /// <summary>
-        /// Foreign Key for <see cref="ApplicationUser"/>
-        /// </summary>
-        [ValidateIgnore]
-        public string PlayerTwoUserId { get; set; }
-
-        /// <summary>
-        /// Reference to ONE user // Fluent API
-        /// </summary>
-        [System.Text.Json.Serialization.JsonIgnore]
-        [Newtonsoft.Json.JsonIgnore]
-        [ValidateIgnore]
-        public ApplicationUser PlayerTwoUser { get; set; }
-
-        /// <summary>
         /// Reference to MANY game moves // Fluent API
         /// ---
         /// E.g. You can use this list to put as many moves into this list 
@@ -60,6 +32,15 @@ namespace Fiar
         /// </summary>
         [ValidateIgnore]
         public ICollection<GameMoveDataModel> Moves { get; set; }
+
+        /// <summary>
+        /// Reference to MANY game participants // Fluent API
+        /// ---
+        /// E.g. You can use this list to put as many moves into this list 
+        /// while creation a new game to create new moves associated to this game at the same time during commit
+        /// </summary>
+        [ValidateIgnore]
+        public ICollection<GameParticipantDataModel> Participants { get; set; }
 
         #endregion
 
