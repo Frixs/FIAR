@@ -14,5 +14,15 @@
         /// The route to the API method
         /// </summary>
         public const string Login = "/api/login";
+
+        /// <summary>
+        /// The route to the API method
+        /// </summary>
+        public const string GetUserProfile = "/api/user/profile";
+
+        /// <summary>
+        /// The route to the API method
+        /// </summary>
+        public const string GetUserRoles = "/api/user/roles";
     }
 }

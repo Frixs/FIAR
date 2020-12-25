@@ -3,7 +3,7 @@
 namespace Fiar
 {
     /// <summary>
-    /// The data model for representing a game move
+    /// The data model for representing a game participant
     /// </summary>
     [ValidableModel(typeof(GameParticipantDataModel))]
     public class GameParticipantDataModel
@@ -43,11 +43,13 @@ namespace Fiar
         /// <summary>
         /// Type of the move (P1 or P2 etc.)
         /// </summary>
+        [ValidateIgnore]
         public PlayerType Type { get; set; }
 
         /// <summary>
         /// Indicates if the participant is connected to the game
         /// </summary>
+        [ValidateIgnore]
         public bool IsConnected { get; set; }
 
         #endregion

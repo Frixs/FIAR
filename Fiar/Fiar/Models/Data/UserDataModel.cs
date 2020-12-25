@@ -109,13 +109,33 @@ namespace Fiar
             pIsRequired: nameof(Nickname_IsRequired),
             pMaxLength: nameof(Nickname_MaxLength),
             pCanContainRegex: nameof(Nickname_CanContainRegex))]
-        public bool Nickname { get; set; }
+        public string Nickname { get; set; }
 
         /// <summary>
         /// THe users role list
         /// </summary>
         [ValidateIgnore]
         public List<string> RoleList { get; set; }
+
+        #endregion
+
+        #region Helpers
+
+        /// <summary>
+        /// Convert the database user to the user data model
+        /// </summary>
+        /// <param name="user">The user</param>
+        /// <returns>User data model</returns>
+        public static UserDataModel Convert(ApplicationUser user)
+        {
+            return new UserDataModel
+            {
+                Id = user.Id,
+                Username = user.UserName,
+                Email = user.Email,
+                Nickname = user.Nickname
+            };
+        }
 
         #endregion
     }

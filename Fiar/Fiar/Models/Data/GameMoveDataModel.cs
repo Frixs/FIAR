@@ -43,6 +43,7 @@ namespace Fiar
         /// <summary>
         /// Type of the move (P1 or P2 etc.)
         /// </summary>
+        [ValidateIgnore]
         public PlayerType Type { get; set; }
 
         /// <summary>

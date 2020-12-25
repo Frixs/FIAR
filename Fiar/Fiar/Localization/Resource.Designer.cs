@@ -61,6 +61,33 @@ namespace Fiar.Localization {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Invalid username or password.
+        /// </summary>
+        internal static string ApiController_Login_InvalidCredentialsErrorMsg {
+            get {
+                return ResourceManager.GetString("ApiController_Login_InvalidCredentialsErrorMsg", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Request validation failed.
+        /// </summary>
+        internal static string ApiController_ValidationErrorMsg {
+            get {
+                return ResourceManager.GetString("ApiController_ValidationErrorMsg", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to User not found.
+        /// </summary>
+        internal static string AuthError_UserNotFound {
+            get {
+                return ResourceManager.GetString("AuthError_UserNotFound", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to {0} allows maximal count {1}..
         /// </summary>
         internal static string ValidateCollectionAttribute_MaxCountLimitMessage {
