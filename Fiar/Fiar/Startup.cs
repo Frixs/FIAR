@@ -159,19 +159,55 @@ namespace Fiar
             // Setup Identity
             app.UseAuthentication();
 
+            // Dev-only
             if (env.IsDevelopment())
             {
                 app.UseDeveloperExceptionPage();
             }
+            // Production-only
             else
             {
-                app.UseExceptionHandler("/Error/500");
+                app.UseExceptionHandler(WebRoutes.Error500);
                 // TODO:LATER: ... HSTS
                 // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
                 // In production, tell the browsers (via the HSTS header) to only try and access our site via HTTPS, not HTTP
                 // Explanation what HSTS does https://youtu.be/fsIkYMpBO6s?t=761
                 app.UseHsts();
             }
+
+            // Define error page redirects
+            app.Use(async (ctx, next) =>
+            {
+                await next();
+
+                // 401
+                if (ctx.Response.StatusCode == 401 && !ctx.Response.HasStarted)
+                {
+                    //Re-execute the request so the user gets the error page
+                    string originalPath = ctx.Request.Path.Value;
+                    ctx.Items["originalPath"] = originalPath;
+                    ctx.Request.Path = WebRoutes.Error401;
+                    await next();
+                }
+                // 403
+                else if (ctx.Response.StatusCode == 403 && !ctx.Response.HasStarted)
+                {
+                    //Re-execute the request so the user gets the error page
+                    string originalPath = ctx.Request.Path.Value;
+                    ctx.Items["originalPath"] = originalPath;
+                    ctx.Request.Path = WebRoutes.Error403;
+                    await next();
+                }
+                // 404
+                else if (ctx.Response.StatusCode == 404 && !ctx.Response.HasStarted)
+                {
+                    //Re-execute the request so the user gets the error page
+                    string originalPath = ctx.Request.Path.Value;
+                    ctx.Items["originalPath"] = originalPath;
+                    ctx.Request.Path = WebRoutes.Error404;
+                    await next();
+                }
+            });
 
             // Redirect all calls from HTTP to HTTPS
             app.UseHttpsRedirection();
