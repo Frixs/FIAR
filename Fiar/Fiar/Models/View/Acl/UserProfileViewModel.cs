@@ -13,5 +13,11 @@ namespace Fiar.ViewModels.Acl
         public string Nickname { get; set; }
 
         public List<string> RoleList { get; set; }
+
+        public Dictionary<string, bool> RoleListView { get; set; }
+
+        public string CurrentPassword { get; set; }
+
+        public string NewPassword { get; set; }
     }
 }

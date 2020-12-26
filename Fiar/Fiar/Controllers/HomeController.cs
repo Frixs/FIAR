@@ -245,7 +245,7 @@ namespace Fiar
                 }
                 else
                 {
-                    ViewData["ufeedback"] = result.Errors.AggregateErrors();
+                    ViewData["ufeedback_failure"] = result.Errors.AggregateErrors();
                 }
             }
 

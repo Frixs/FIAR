@@ -59,5 +59,15 @@
         /// The route to the web request method
         /// </summary>
         public const string RegisterRequest = "/request/register";
+
+        /// <summary>
+        /// The route to the web request method
+        /// </summary>
+        public const string UserEditProfileDataAclRequest = "/request/acl/user/profile/edit";
+
+        /// <summary>
+        /// The route to the web request method
+        /// </summary>
+        public const string UserEditProfilePasswordAclRequest = "/request/acl/user/password/edit";
     }
 }

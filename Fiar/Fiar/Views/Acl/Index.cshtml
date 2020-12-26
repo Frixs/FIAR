@@ -7,9 +7,9 @@
     <h1 class="display-4">Welcome ACL</h1>
     @foreach (var user in Model.Users)
     {
-<p>
-    <strong>@user.Username</strong>
-    <a class="nav-link text-dark" asp-area="" asp-controller="Acl" asp-action="UserEdit" asp-route-u="@user.Id">Edit</a>
-</p>
+        <p>
+            <strong>User: @user.Username / Email: @user.Email / Nickname: @user.Nickname</strong>
+            <a class="nav-link text-dark" asp-area="" asp-controller="Acl" asp-action="UserEdit" asp-route-u="@user.Id">Edit</a>
+        </p>
     }
 </div>

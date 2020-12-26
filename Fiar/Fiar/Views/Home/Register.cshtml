@@ -9,9 +9,9 @@
     <h2 class="text-center">Register</h2>
     @if (@Model != null)
     {
-        @if (@ViewData["ufeedback"] != null)
+        @if (@ViewData["ufeedback_failure"] != null)
         {
-            <div>@ViewData["ufeedback"]</div>
+            <div>@ViewData["ufeedback_failure"]</div>
         }
         else
         {
