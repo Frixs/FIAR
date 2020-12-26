@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -14,7 +15,7 @@ namespace Fiar
     /// <summary>
     /// Manages the Web API calls
     /// </summary>
-    [AuthorizeToken]
+    //[AuthorizeToken] // Allow only to JWT auth
     [ApiController]
     public class ApiController : Controller
     {
@@ -283,6 +284,48 @@ namespace Fiar
                 }
             };
         }
+
+        /// <summary>
+        /// Returns the users profile details based on the authenticated user
+        /// </summary>
+        /// <returns></returns>
+        [HttpPost]
+        [Route(ApiRoutes.GetUserFriendProfiles)]
+        public async Task<ApiResponse<Result_UserFriendProfilesDetailsApiModel>> GetUserFriendProfilesAsync([FromBody] Get_UserProfileDetailsApiModel model)
+        {
+            #region Get/Check User
+
+            // Get user by the claims
+            var user = await mUserManager.GetUserAsync(HttpContext.User);
+            // If user does not have authorization...
+            if (!await AuthorizeUserAsync(user, PolicyNames.PlayerLevel))
+                // Return user auth error response
+                return GetAuthorizationErrorApiResponse<Result_UserFriendProfilesDetailsApiModel>(Localization.Resource.AuthError_UserNotFound);
+
+            #endregion
+
+            // The error message to user
+            var errorResponse = new ApiResponse<Result_UserFriendProfilesDetailsApiModel> { ErrorMessage = Localization.Resource.ApiController_ValidationErrorMsg };
+            // If we have no model...
+            if (model == null)
+                // Return failed response
+                return errorResponse;
+
+            
+            // TODO ---
+
+
+            // Return user details to user
+            return new ApiResponse<Result_UserFriendProfilesDetailsApiModel>
+            {
+                // Pass back the user details
+                Response = new Result_UserFriendProfilesDetailsApiModel
+                {
+                    FriendModels = new List<UserDataModel>()
+                }
+            };
+        }
+
 
         #endregion
 

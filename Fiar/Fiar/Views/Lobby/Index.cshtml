@@ -3,5 +3,154 @@
 }
 
 <div class="text-center">
-    <h1 class="display-4">Welcome Lobby</h1>
+    <h1 class="display-4">Lobby</h1>
 </div>
+<div class="container">
+    <div class="row">
+        <div class="col-md-4">
+            <div class="text-center">
+                <h2>Online Players</h2>
+            </div>
+            <table class="table">
+                <tbody>
+                    <tr>
+                        <td>Mark</td>
+                        <td>Otto</td>
+                        <td>mdo</td>
+                    </tr>
+                    <tr>
+                        <th scope="row">2</th>
+                        <td>Jacob</td>
+                        <td>Thornton</td>
+                    </tr>
+                    <tr>
+                        <th scope="row">3</th>
+                        <td>Larry</td>
+                        <td>the Bird</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+        <div class="col-md-4">
+            <div class="text-center">
+                <h2>Duel Requests</h2>
+            </div>
+            <table class="table">
+                <tbody>
+                    <tr>
+                        <td>Mark</td>
+                        <td>Otto</td>
+                        <td>mdo</td>
+                    </tr>
+                    <tr>
+                        <th scope="row">2</th>
+                        <td>Jacob</td>
+                        <td>Thornton</td>
+                    </tr>
+                    <tr>
+                        <th scope="row">3</th>
+                        <td>Larry</td>
+                        <td>the Bird</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+        <div class="col-md-4">
+            <div class="text-center">
+                <h2>Friend List</h2>
+            </div>
+            <table class="table">
+                <tbody>
+                    <tr>
+                        <td>Mark</td>
+                        <td>Otto</td>
+                        <td>mdo</td>
+                    </tr>
+                    <tr>
+                        <th scope="row">2</th>
+                        <td>Jacob</td>
+                        <td>Thornton</td>
+                    </tr>
+                    <tr>
+                        <th scope="row">3</th>
+                        <td>Larry</td>
+                        <td>the Bird</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+@section Scripts{
+    <script>
+        // READY
+        $(document).ready(function () {
+            //updateOnlineUsersFunction();
+            updateFriendListFunction();
+        });
+
+        // FUNCTION
+        // Loop - update online users
+        function updateOnlineUsersFunction() {
+            // AJAX POST
+            $.ajax({
+                url: "@ApiRoutes.GetOnlineUserProfiles",
+                type: "POST",
+                dataType: "json",
+                contentType: 'application/json;charset=utf-8',
+                data: JSON.stringify({ IncludeRoleList: false }),
+                // Success
+                success: function (data) {
+                    console.log(data);
+                },
+                // Error
+                error: function (data) {
+                    alert(data.status);
+                    // If unauthorized error...
+                    if (data.status == 401) {
+                        window.alert = function () { };
+                        window.location.href = "@(WebRoutes.Login)";
+                    } else {
+                        window.alert = function () { };
+                        window.location.href = "@(WebRoutes.Error500)";
+                    }
+                }
+            });
+            // Repeat
+            setTimeout(updateOnlineUsersFunction, 10_000);
+        }
+
+        // FUNCTION
+        // Loop - update friend list
+        function updateFriendListFunction() {
+            // AJAX POST
+            $.ajax({
+                url: "@ApiRoutes.GetUserFriendProfiles",
+                type: "POST",
+                dataType: "json",
+                contentType: 'application/json;charset=utf-8',
+                data: JSON.stringify({ IncludeRoleList: false }),
+                // Success
+                success: function (data) {
+                    console.log(data);
+                },
+                // Error
+                error: function (data) {
+                    alert(data.status);
+                    // If unauthorized error...
+                    if (data.status == 401) {
+                        window.alert = function () { };
+                        window.location.href = "@(WebRoutes.Login)";
+                    } else {
+                        window.alert = function () { };
+                        window.location.href = "@(WebRoutes.Error500)";
+                    }
+                }
+            });
+
+            // Repeat
+            setTimeout(updateFriendListFunction, 10_000);
+        }
+    </script>
+}

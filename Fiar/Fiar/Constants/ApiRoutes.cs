@@ -24,5 +24,15 @@
         /// The route to the API method
         /// </summary>
         public const string GetUserRoles = "/api/user/roles";
+
+        /// <summary>
+        /// The route to the API method
+        /// </summary>
+        public const string GetUserFriendProfiles = "/api/user/friend/profile/all";
+
+        /// <summary>
+        /// The route to the API method
+        /// </summary>
+        public const string GetOnlineUserProfiles = "/api/user/profile/all/online";
     }
 }
