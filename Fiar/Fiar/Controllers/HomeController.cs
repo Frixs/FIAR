@@ -10,7 +10,7 @@ using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
 
-namespace Fiar.Controllers
+namespace Fiar
 {
     /// <summary>
     /// Manages the base web server pages
@@ -236,6 +236,9 @@ namespace Fiar.Controllers
                     var emailVerificationCode = mUserManager.GenerateEmailConfirmationTokenAsync(newUser);
 
                     // TODO: Email the user the verification code (server-side) https://youtu.be/iYFP26_zI98?t=2407
+
+                    // Log it
+                    mLogger.LogInformation($"New user {newUser.UserName} has been registered!");
 
                     // Go to login
                     return RedirectToAction(nameof(Login), new { register = string.Empty });
