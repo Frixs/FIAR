@@ -2,7 +2,9 @@
 using Ixs.DNA;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
@@ -42,6 +44,11 @@ namespace Fiar
         protected RoleManager<IdentityRole> mRoleManager;
 
         /// <summary>
+        /// The manager for handling memory cache
+        /// </summary>
+        protected IMemoryCache mMemoryCache;
+
+        /// <summary>
         /// Injection - <inheritdoc cref="ILogger"/>
         /// </summary>
         private readonly ILogger mLogger;
@@ -62,12 +69,13 @@ namespace Fiar
         /// <param name="userManager">The Identity user manager</param>
         /// <param name="signInManager">The Identity sign in manager</param>
         /// <param name="roleManager">The Identity role manager</param>
-        public ApiController(ApplicationDbContext context, UserManager<ApplicationUser> userManager, SignInManager<ApplicationUser> signInManager, RoleManager<IdentityRole> roleManager, IConfigBox configBox)
+        public ApiController(ApplicationDbContext context, UserManager<ApplicationUser> userManager, SignInManager<ApplicationUser> signInManager, RoleManager<IdentityRole> roleManager, IMemoryCache memoryCache, IConfigBox configBox)
         {
             mContext = context;
             mUserManager = userManager;
             mSignInManager = signInManager;
             mRoleManager = roleManager;
+            mMemoryCache = memoryCache;
             mConfigBox = configBox ?? throw new ArgumentNullException(nameof(configBox));
             mLogger = FrameworkDI.Logger ?? throw new ArgumentNullException(nameof(mLogger));
         }
@@ -291,7 +299,7 @@ namespace Fiar
         /// <returns></returns>
         [HttpPost]
         [Route(ApiRoutes.GetUserFriendProfiles)]
-        public async Task<ApiResponse<Result_UserFriendProfilesDetailsApiModel>> GetUserFriendProfilesAsync([FromBody] Get_UserProfileDetailsApiModel model)
+        public async Task<ApiResponse<Result_UserFriendProfilesApiModel>> GetUserFriendProfilesAsync([FromBody] Get_UserProfileDetailsApiModel model)
         {
             #region Get/Check User
 
@@ -300,32 +308,104 @@ namespace Fiar
             // If user does not have authorization...
             if (!await AuthorizeUserAsync(user, PolicyNames.PlayerLevel))
                 // Return user auth error response
-                return GetAuthorizationErrorApiResponse<Result_UserFriendProfilesDetailsApiModel>(Localization.Resource.AuthError_UserNotFound);
+                return GetAuthorizationErrorApiResponse<Result_UserFriendProfilesApiModel>(Localization.Resource.AuthError_UserNotFound);
 
             #endregion
 
             // The error message to user
-            var errorResponse = new ApiResponse<Result_UserFriendProfilesDetailsApiModel> { ErrorMessage = Localization.Resource.ApiController_ValidationErrorMsg };
+            var errorResponse = new ApiResponse<Result_UserFriendProfilesApiModel> { ErrorMessage = Localization.Resource.ApiController_ValidationErrorMsg };
             // If we have no model...
             if (model == null)
                 // Return failed response
                 return errorResponse;
 
-            
-            // TODO ---
+            // TODO: Include roles function
 
+            Dictionary<string, DateTime> loggedInUsers;
+            if (!mMemoryCache.TryGetValue(MemoryCacheIdentifiers.LoggedInUsers, out loggedInUsers))
+                loggedInUsers = new Dictionary<string, DateTime>();
+
+            // Get current user
+            var currentUser = await mUserManager.GetUserAsync(User);
+            List<UserDataModel> friends = null;
+            if (currentUser != null)
+            {
+                // Get all friends of the curretnly logged in user
+                friends = mContext.FriendUserRelations
+                    .Where(o => o.UserId.Equals(currentUser.Id))
+                    .Include(o => o.FriendUser)
+                    .Select(o => UserDataModel.Convert(o.FriendUser))
+                    .ToList();
+            }
+            else
+            {
+                friends = new List<UserDataModel>();
+            }
+
+            // Set online identifier
+            foreach (var u in friends)
+                u.IsOnline = loggedInUsers.ContainsKey(u.Username);
 
             // Return user details to user
-            return new ApiResponse<Result_UserFriendProfilesDetailsApiModel>
+            return new ApiResponse<Result_UserFriendProfilesApiModel>
             {
                 // Pass back the user details
-                Response = new Result_UserFriendProfilesDetailsApiModel
+                Response = new Result_UserFriendProfilesApiModel
                 {
-                    FriendModels = new List<UserDataModel>()
+                    FriendModels = friends
                 }
             };
         }
 
+        /// </summary>
+        /// <returns></returns>
+        [HttpPost]
+        [Route(ApiRoutes.GetAllUserProfiles)]
+        public async Task<ApiResponse<Result_GetAllUserProfilesApiModel>> GetAllUserProfilesAsync([FromBody] Get_UserProfileDetailsApiModel model)
+        {
+            #region Get/Check User
+
+            // Get user by the claims
+            var user = await mUserManager.GetUserAsync(HttpContext.User);
+            // If user does not have authorization...
+            if (!await AuthorizeUserAsync(user, PolicyNames.PlayerLevel))
+                // Return user auth error response
+                return GetAuthorizationErrorApiResponse<Result_GetAllUserProfilesApiModel>(Localization.Resource.AuthError_UserNotFound);
+
+            #endregion
+
+            // The error message to user
+            var errorResponse = new ApiResponse<Result_GetAllUserProfilesApiModel> { ErrorMessage = Localization.Resource.ApiController_ValidationErrorMsg };
+            // If we have no model...
+            if (model == null)
+                // Return failed response
+                return errorResponse;
+
+            // TODO: Include roles function
+
+            Dictionary<string, DateTime> loggedInUsers;
+            if (!mMemoryCache.TryGetValue(MemoryCacheIdentifiers.LoggedInUsers, out loggedInUsers))
+                loggedInUsers = new Dictionary<string, DateTime>();
+
+            // Get all friends of the curretnly logged in user
+            List<UserDataModel> users = mContext.Users
+                .Select(o => UserDataModel.Convert(o))
+                .ToList();
+
+            // Set online identifier
+            foreach (var u in users)
+                u.IsOnline = loggedInUsers.ContainsKey(u.Username);
+
+            // Return user details to user
+            return new ApiResponse<Result_GetAllUserProfilesApiModel>
+            {
+                // Pass back the user details
+                Response = new Result_GetAllUserProfilesApiModel
+                {
+                    OnlineUserModels = users
+                }
+            };
+        }
 
         #endregion
 

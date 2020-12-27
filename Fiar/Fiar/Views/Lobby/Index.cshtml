@@ -86,7 +86,7 @@
     <script>
         // READY
         $(document).ready(function () {
-            //updateOnlineUsersFunction();
+            updateOnlineUsersFunction();
             updateFriendListFunction();
         });
 
@@ -95,7 +95,7 @@
         function updateOnlineUsersFunction() {
             // AJAX POST
             $.ajax({
-                url: "@ApiRoutes.GetOnlineUserProfiles",
+                url: "@ApiRoutes.GetAllUserProfiles",
                 type: "POST",
                 dataType: "json",
                 contentType: 'application/json;charset=utf-8',

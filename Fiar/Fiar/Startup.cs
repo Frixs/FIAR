@@ -6,11 +6,14 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.IdentityModel.Tokens;
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 
 namespace Fiar
@@ -131,6 +134,9 @@ namespace Fiar
                 options.SlidingExpiration = true;
             });
 
+            // Add caching
+            services.AddMemoryCache();
+
             var mvc = services.AddMvc()
                 // State we are a minimum compatability of...
                 // Excplanation at https://youtu.be/fsIkYMpBO6s?t=578
@@ -144,7 +150,7 @@ namespace Fiar
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
-        public void Configure(IApplicationBuilder app, IWebHostEnvironment env, IServiceProvider serviceProvider)
+        public void Configure(IApplicationBuilder app, IWebHostEnvironment env, IServiceProvider serviceProvider, IMemoryCache memoryCache, IHttpContextAccessor httpContextAccessor)
         {
             // Use base path
             app.UsePathBase(Framework.Construction.Configuration["PathBase"]);
@@ -175,11 +181,15 @@ namespace Fiar
                 app.UseHsts();
             }
 
-            // Define error page redirects
+            // Middleware
             app.Use(async (ctx, next) =>
             {
                 await next();
 
+                // Handle online users cache
+                HandleOnlineUsersCache(httpContextAccessor, memoryCache);
+
+                // Define error page redirects
                 // 401
                 if (ctx.Response.StatusCode == 401 && !ctx.Response.HasStarted)
                 {
@@ -230,5 +240,41 @@ namespace Fiar
             // Make sure we have the database.
             serviceProvider.GetService<ApplicationDbContext>().Database.EnsureCreated();
         }
+
+        #region Helpers
+        
+        /// <summary>
+        /// Handle the cache on end request
+        /// </summary>
+        private void HandleOnlineUsersCache(IHttpContextAccessor httpContextAccessor, IMemoryCache memoryCache)
+        {
+            Dictionary<string, DateTime> loggedInUsers;
+            if (!memoryCache.TryGetValue(MemoryCacheIdentifiers.LoggedInUsers, out loggedInUsers))
+                loggedInUsers = new Dictionary<string, DateTime>();
+            
+            if (httpContextAccessor.HttpContext.User.Identity.IsAuthenticated)
+            {
+                var userName = httpContextAccessor.HttpContext.User.Identity.Name;
+                if (loggedInUsers != null)
+                {
+                    loggedInUsers[userName] = DateTime.Now;
+                    memoryCache.Set(MemoryCacheIdentifiers.LoggedInUsers, loggedInUsers);
+                }
+            }
+
+            if (loggedInUsers != null)
+            {
+                foreach (var item in loggedInUsers.ToList())
+                {
+                    if (item.Value < DateTime.Now.AddMinutes(-5))
+                    {
+                        loggedInUsers.Remove(item.Key);
+                    }
+                }
+                memoryCache.Set(MemoryCacheIdentifiers.LoggedInUsers, loggedInUsers);
+            }
+        }
+
+        #endregion
     }
 }

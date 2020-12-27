@@ -114,8 +114,20 @@ namespace Fiar
         /// <summary>
         /// THe users role list
         /// </summary>
+        /// <remarks>
+        ///     Separate value
+        /// </remarks>
         [ValidateIgnore]
         public List<string> RoleList { get; set; }
+
+        /// <summary>
+        /// If not null, it indicates if the user is logged in or not
+        /// </summary>
+        /// <remarks>
+        ///     Separate value
+        /// </remarks>
+        [ValidateIgnore]
+        public bool? IsOnline { get; set; }
 
         #endregion
 

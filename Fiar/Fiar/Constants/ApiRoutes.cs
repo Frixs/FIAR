@@ -33,6 +33,6 @@
         /// <summary>
         /// The route to the API method
         /// </summary>
-        public const string GetOnlineUserProfiles = "/api/user/profile/all/online";
+        public const string GetAllUserProfiles = "/api/user/profile/all/online";
     }
 }
