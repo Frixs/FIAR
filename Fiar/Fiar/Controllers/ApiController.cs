@@ -11,6 +11,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Fiar.ViewModels;
 
 namespace Fiar
 {
@@ -252,7 +253,7 @@ namespace Fiar
             var resultUser = UserDataModel.Convert(user);
             
             // Include additional data
-            await IncludeAdditionalDataAsync(resultUser, model.IncludeRoleList, user, model.IncludeOnlineStatus, loggedInUsers, model.IncludeIsFriendWith, model.IncludeIsChallanged);
+            await IncludeAdditionalDataAsync(resultUser, user, model.IncludeRoleList, model.IncludeOnlineStatus, loggedInUsers, model.IncludeIsFriendWith, model.IncludeIsChallanged);
 
             // Return user details to user
             return new ApiResponse<Result_UserProfileDetailsApiModel>
@@ -324,31 +325,21 @@ namespace Fiar
                 // Return failed response
                 return errorResponse;
 
-            // TODO: Include roles function
-
             // Get online status
             Dictionary<string, DateTime> loggedInUsers;
             if (!mMemoryCache.TryGetValue(MemoryCacheIdentifiers.LoggedInUsers, out loggedInUsers))
                 loggedInUsers = new Dictionary<string, DateTime>();
 
-            List<UserDataModel> friends = null;
-            if (user != null)
-            {
-                // Get all friends of the curretnly logged in user
-                friends = mContext.FriendUserRelations
-                    .Where(o => o.UserId.Equals(user.Id))
-                    .Include(o => o.FriendUser)
-                    .Select(o => UserDataModel.Convert(o.FriendUser))
-                    .ToList();
-            }
-            else
-            {
-                friends = new List<UserDataModel>();
-            }
+            // Get all friends of the curretnly logged in user
+            var friends = mContext.FriendUserRelations
+                .Where(o => o.UserId.Equals(user.Id))
+                .Include(o => o.FriendUser)
+                .Select(o => UserDataModel.Convert(o.FriendUser))
+                .ToList();
 
             // Set additional user data
             foreach (var u in friends)
-                await IncludeAdditionalDataAsync(u, model.IncludeRoleList, user, model.IncludeOnlineStatus, loggedInUsers, model.IncludeIsFriendWith, model.IncludeIsChallanged);
+                await IncludeAdditionalDataAsync(u, user, model.IncludeRoleList, model.IncludeOnlineStatus, loggedInUsers, model.IncludeIsFriendWith, model.IncludeIsChallanged);
 
             // Return user details to user
             return new ApiResponse<Result_UserFriendProfilesApiModel>
@@ -361,11 +352,12 @@ namespace Fiar
             };
         }
 
+        /// <summary>
+        /// Returns the users profile details for all users
         /// </summary>
-        /// <returns></returns>
         [HttpPost]
         [Route(ApiRoutes.GetAllUserProfiles)]
-        public async Task<ApiResponse<Result_GetAllUserProfilesApiModel>> GetAllUserProfilesAsync([FromBody] Get_UserProfileDetailsApiModel model)
+        public async Task<ApiResponse<Result_AllUserProfilesApiModel>> GetAllUserProfilesAsync([FromBody] Get_UserProfileDetailsApiModel model)
         {
             #region Get/Check User
 
@@ -374,19 +366,16 @@ namespace Fiar
             // If user does not have authorization...
             if (!await AuthorizeUserAsync(user, PolicyNames.PlayerLevel))
                 // Return user auth error response
-                return GetAuthorizationErrorApiResponse<Result_GetAllUserProfilesApiModel>(Localization.Resource.AuthError_UserNotFound);
+                return GetAuthorizationErrorApiResponse<Result_AllUserProfilesApiModel>(Localization.Resource.AuthError_UserNotFound);
 
             #endregion
 
             // The error message to user
-            var errorResponse = new ApiResponse<Result_GetAllUserProfilesApiModel> { ErrorMessage = Localization.Resource.ApiController_ValidationErrorMsg };
+            var errorResponse = new ApiResponse<Result_AllUserProfilesApiModel> { ErrorMessage = Localization.Resource.ApiController_ValidationErrorMsg };
             // If we have no model...
             if (model == null)
                 // Return failed response
                 return errorResponse;
-
-            // TODO: Include roles function
-            // TODO: IsFriendWith
 
             // Get online status
             Dictionary<string, DateTime> loggedInUsers;
@@ -400,15 +389,134 @@ namespace Fiar
 
             // Set additional user data
             foreach (var u in users)
-                await IncludeAdditionalDataAsync(u, model.IncludeRoleList, user, model.IncludeOnlineStatus, loggedInUsers, model.IncludeIsFriendWith, model.IncludeIsChallanged);
+                await IncludeAdditionalDataAsync(u, user, model.IncludeRoleList, model.IncludeOnlineStatus, loggedInUsers, model.IncludeIsFriendWith, model.IncludeIsChallanged);
 
             // Return user details to user
-            return new ApiResponse<Result_GetAllUserProfilesApiModel>
+            return new ApiResponse<Result_AllUserProfilesApiModel>
             {
                 // Pass back the user details
-                Response = new Result_GetAllUserProfilesApiModel
+                Response = new Result_AllUserProfilesApiModel
                 {
                     UserModels = users
+                }
+            };
+        }
+
+        /// <summary>
+        /// Returns the users profile details for all online users
+        /// </summary>
+        [HttpPost]
+        [Route(ApiRoutes.GetOnlineUserProfiles)]
+        public async Task<ApiResponse<Result_OnlineUserProfilesApiModel>> GetOnlineUserProfilesAsync([FromBody] Get_UserProfileDetailsApiModel model)
+        {
+            #region Get/Check User
+
+            // Get user by the claims
+            var user = await mUserManager.GetUserAsync(HttpContext.User);
+            // If user does not have authorization...
+            if (!await AuthorizeUserAsync(user, PolicyNames.PlayerLevel))
+                // Return user auth error response
+                return GetAuthorizationErrorApiResponse<Result_OnlineUserProfilesApiModel>(Localization.Resource.AuthError_UserNotFound);
+
+            #endregion
+
+            // The error message to user
+            var errorResponse = new ApiResponse<Result_OnlineUserProfilesApiModel> { ErrorMessage = Localization.Resource.ApiController_ValidationErrorMsg };
+            // If we have no model...
+            if (model == null)
+                // Return failed response
+                return errorResponse;
+
+            // Get online status
+            Dictionary<string, DateTime> loggedInUsers;
+            if (!mMemoryCache.TryGetValue(MemoryCacheIdentifiers.LoggedInUsers, out loggedInUsers))
+                loggedInUsers = new Dictionary<string, DateTime>();
+
+            // Get all users
+            List<UserDataModel> users = mContext.Users
+                .Select(o => UserDataModel.Convert(o))
+                .ToList();
+
+            List<UserDataModel> resultUsers = new List<UserDataModel>();
+            // Set additional user data
+            foreach (var u in users)
+            {
+                await IncludeAdditionalDataAsync(u, user, model.IncludeRoleList, model.IncludeOnlineStatus, loggedInUsers, model.IncludeIsFriendWith, model.IncludeIsChallanged);
+                if (loggedInUsers.ContainsKey(u.Username))
+                    resultUsers.Add(u);
+            }
+
+            // Return user details to user
+            return new ApiResponse<Result_OnlineUserProfilesApiModel>
+            {
+                // Pass back the user details
+                Response = new Result_OnlineUserProfilesApiModel
+                {
+                    UserModels = resultUsers
+                }
+            };
+        }
+
+        /// <summary>
+        /// Returns the user requests based on the authenticated user
+        /// </summary>
+        [HttpPost]
+        [Route(ApiRoutes.GetUserRequests)]
+        public async Task<ApiResponse<Result_UserRequestsApiModel>> GetUserRequestsAsync([FromBody] Get_UserProfileDetailsApiModel model)
+        {
+            #region Get/Check User
+
+            // Get user by the claims
+            var user = await mUserManager.GetUserAsync(HttpContext.User);
+            // If user does not have authorization...
+            if (!await AuthorizeUserAsync(user, PolicyNames.PlayerLevel))
+                // Return user auth error response
+                return GetAuthorizationErrorApiResponse<Result_UserRequestsApiModel>(Localization.Resource.AuthError_UserNotFound);
+
+            #endregion
+
+            // The error message to user
+            var errorResponse = new ApiResponse<Result_UserRequestsApiModel> { ErrorMessage = Localization.Resource.ApiController_ValidationErrorMsg };
+            // If we have no model...
+            if (model == null)
+                // Return failed response
+                return errorResponse;
+
+            // TODO: Include roles function
+            // TODO: IsFriendWith
+
+            // Get online status
+            Dictionary<string, DateTime> loggedInUsers;
+            if (!mMemoryCache.TryGetValue(MemoryCacheIdentifiers.LoggedInUsers, out loggedInUsers))
+                loggedInUsers = new Dictionary<string, DateTime>();
+
+            // Get all requests of the curretnly logged in user
+            var requests = mContext.UserRequests
+                .Where(o => o.RelatedUserId.Equals(user.Id))
+                .Include(o => o.User)
+                .ToList();
+
+            List<UserRequestViewModel> resultRequests = new List<UserRequestViewModel>();
+            // Set additional user data
+            foreach (var req in requests)
+            {
+                var u = UserDataModel.Convert(req.User);
+                await IncludeAdditionalDataAsync(u, user, model.IncludeRoleList, model.IncludeOnlineStatus, loggedInUsers, model.IncludeIsFriendWith, model.IncludeIsChallanged);
+                resultRequests.Add(new UserRequestViewModel
+                { 
+                    Id = req.Id,
+                    Type = req.Type,
+                    User = u
+                });
+            }
+
+            // Return user details to user
+            return new ApiResponse<Result_UserRequestsApiModel>
+            {
+                // Pass back the user details
+                Response = new Result_UserRequestsApiModel
+                {
+                    RequestModels = resultRequests
                 }
             };
         }
@@ -503,7 +611,7 @@ namespace Fiar
         /// Include additional data into the user dataw model
         /// </summary>
         /// <returns>The same model with additional data included</returns>
-        private async Task IncludeAdditionalDataAsync(UserDataModel user, bool roles = false, ApplicationUser appUser = null, bool onlineStatus = false, Dictionary<string, DateTime> loggedInUserCache = null, bool isFriendWith = false, bool isChallanged = false)
+        private async Task IncludeAdditionalDataAsync(UserDataModel user, ApplicationUser appUser, bool roles = false, bool onlineStatus = false, Dictionary<string, DateTime> loggedInUserCache = null, bool isFriendWith = false, bool isChallanged = false)
         {
             if (roles && appUser != null)
             {
@@ -515,13 +623,13 @@ namespace Fiar
                 // Set status
                 user.IsOnline = loggedInUserCache.ContainsKey(user.Username);
             }
-            if (isFriendWith)
+            if (isFriendWith && !user.Id.Equals(appUser.Id))
             {
                 // Set friend relation
                 user.IsFriendWith = mContext.FriendUserRelations.FirstOrDefault(o => o.UserId.Equals(user.Id) && o.FriendUserId.Equals(user.Id)) != null;
                 user.IsFriendWith = mContext.UserRequests.FirstOrDefault(o => o.Type == UserRequestType.Friend && o.UserId.Equals(user.Id) && o.RelatedUserId.Equals(user.Id)) == null ? user.IsFriendWith : null;
             }
-            if (isChallanged)
+            if (isChallanged && !user.Id.Equals(appUser.Id))
             {
                 // Set challange request status
                 user.IsChallanged = mContext.UserRequests.Where(o => o.Type == UserRequestType.Challange && o.UserId.Equals(user.Id) && o.RelatedUserId.Equals(user.Id)).Count() > 0;

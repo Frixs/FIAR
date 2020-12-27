@@ -3,9 +3,9 @@
 namespace Fiar
 {
     /// <summary>
-    /// The result of a login request or get user profile details request via API
+    /// The result of getting all users via API
     /// </summary>
-    public class Result_GetAllUserProfilesApiModel
+    public class Result_AllUserProfilesApiModel
     {
         /// <summary>
         /// The user models

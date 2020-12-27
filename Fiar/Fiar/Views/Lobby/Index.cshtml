@@ -9,7 +9,7 @@
     <div class="row">
         <div class="col-lg-4">
             <div class="text-center">
-                <h2>All Players</h2>
+                <h2>Online Players</h2>
             </div>
             <table class="table player-table">
                 <tbody id="all-users-tbody">
@@ -21,22 +21,7 @@
                 <h2>Requests</h2>
             </div>
             <table class="table">
-                <tbody>
-                    <tr>
-                        <td>Mark</td>
-                        <td>Otto</td>
-                        <td>mdo</td>
-                    </tr>
-                    <tr>
-                        <th scope="row">2</th>
-                        <td>Jacob</td>
-                        <td>Thornton</td>
-                    </tr>
-                    <tr>
-                        <th scope="row">3</th>
-                        <td>Larry</td>
-                        <td>the Bird</td>
-                    </tr>
+                <tbody id="requests-tbody">
                 </tbody>
             </table>
         </div>
@@ -63,10 +48,12 @@
         // Data update loop
         function update() {
             updateUsersFunction();
+            updateRequestsFunction();
             updateFriendListFunction();
 
             // Repeat
             setTimeout(updateUsersFunction, 10_000);
+            setTimeout(updateRequestsFunction, 10_000);
             setTimeout(updateFriendListFunction, 10_000);
         }
 
@@ -75,7 +62,7 @@
         function updateUsersFunction() {
             // AJAX POST
             $.ajax({
-                url: "@ApiRoutes.GetAllUserProfiles",
+                url: "@ApiRoutes.GetOnlineUserProfiles",
                 type: "POST",
                 dataType: "json",
                 contentType: 'application/json;charset=utf-8',
@@ -91,6 +78,53 @@
                         $('#all-users-tbody').append(
                             '<tr>'
                             + '<td class="text-center">no players</td>'
+                            + '</tr>'
+                        );
+                    }
+                },
+                // Error
+                error: function (data) {
+                    alert(data.status);
+                    // If unauthorized error...
+                    if (data.status == 401) {
+                        window.alert = function () { };
+                        window.location.href = "@(WebRoutes.Login)";
+                    } else {
+                        window.alert = function () { };
+                        window.location.href = "@(WebRoutes.Error500)";
+                    }
+                }
+            });
+        }
+
+        // FUNCTION
+        // Update user requests
+        function updateRequestsFunction() {
+            // AJAX POST
+            $.ajax({
+                url: "@ApiRoutes.GetUserRequests",
+                type: "POST",
+                dataType: "json",
+                contentType: 'application/json;charset=utf-8',
+                data: JSON.stringify({ IncludeRoleList: false, IncludeOnlineStatus: true, IncludeIsFriendWith: false, IncludeIsChallanged: false }),
+                // Success
+                success: function (data) {
+                    //console.log(data);
+                    $('#requests-tbody').empty();
+                    for (var i = 0; i < data.response.requestModels.length; ++i) {
+                        console.log(data.response.requestModels[i]);
+                        $('#requests-tbody').append(
+                            '<tr class="--' + (data.response.requestModels[i].user.isOnline ? 'online' : 'offline') + '">'
+                            + '<td>' + data.response.requestModels[i].user.nickname + '</td>'
+                            + '<td class="status-indicator"><i class="fas fa-circle"></i></td>'
+                            + '<td>' + (data.response.requestModels[i].type ? '' : '<button class="btn btn-dark">CHALLANGE</button>') + '</td>'
+                            + '</tr>'
+                        );
+                    }
+                    if (data.response.requestModels.length == 0) {
+                        $('#requests-tbody').append(
+                            '<tr>'
+                            + '<td class="text-center">no requests</td>'
                             + '</tr>'
                         );
                     }
@@ -153,12 +187,11 @@
         // FUNCTION
         // Append player data into a player table row
         function appendPlayerTableRow(ctx, user) {
-            console.log(user);
             $(ctx).append(
                 '<tr class="--' + (user.isOnline ? 'online' : 'offline') + '">'
                 + '<td>' + user.nickname + '</td>'
                 + '<td class="status-indicator"><i class="fas fa-circle"></i></td>'
-                + '<td>' + (user.isChallanged ? '' : '<button class="btn btn-dark">CHALLANGE</button>') + '</td>'
+                + '<td>' + (user.isChallanged == null ? '' : (user.isChallanged ? '' : '<button class="btn btn-dark">CHALLANGE</button>')) + '</td>'
                 + '<td data-toggle="tooltip" title="' + (user.isFriendWith == null ? '' : (user.isFriendWith ? 'Remove from friend list' : 'Create a new friend request')) + '">' + (user.isFriendWith == null ? '' : (user.isFriendWith ? '<button class="btn btn-danger"><i class="fas fa-user-minus"></i></button>' : '<button class="btn btn-success"><i class="fas fa-user-plus"></i></button>')) + '</td>'
                 + '</tr>'
             );
