@@ -28,23 +28,26 @@
                         <li class="nav-item">
                             <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="Index">Home</a>
                         </li>
+                        @if (ViewData["notInitialized"] != null)
+                        {
+                            <li class="nav-item">
+                                <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="InitializeRequest">Initialize</a>
+                            </li>
+                        }
                         @if (User.Identity.IsAuthenticated && User.IsInRole(RoleNames.Administrator))
                         {
                             <li class="nav-item">
                                 <a class="nav-link text-dark" asp-area="" asp-controller="Acl" asp-action="Index">ACL</a>
                             </li>
                         }
-                        @if (ViewData["notInitialized"] != null)
-                        {
-                            <li class="nav-item">
-                                <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="InitializeRequest">INITIALIZE</a>
-                            </li>
-                        }
-                        @if (User.Identity.IsAuthenticated)
+                        @if (User.Identity.IsAuthenticated && User.IsInRole(RoleNames.Player))
                         {
                             <li class="nav-item">
                                 <a class="nav-link text-dark" asp-area="" asp-controller="Lobby" asp-action="Index">Lobby</a>
                             </li>
+                        }
+                        @if (User.Identity.IsAuthenticated)
+                        {
                             <li class="nav-item">
                                 <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="LogoutRequest">Logout (@User.Identity.Name)</a>
                             </li>

@@ -243,11 +243,16 @@ namespace Fiar
                 // Return failed response
                 return errorResponse;
 
+            // Get online status
+            Dictionary<string, DateTime> loggedInUsers;
+            if (!mMemoryCache.TryGetValue(MemoryCacheIdentifiers.LoggedInUsers, out loggedInUsers))
+                loggedInUsers = new Dictionary<string, DateTime>();
+
             // Create the user model
             var resultUser = UserDataModel.Convert(user);
-            if (model.IncludeRoleList)
-                // Get user roles
-                resultUser.RoleList = (await mUserManager.GetRolesAsync(user)).ToList();
+            
+            // Include additional data
+            await IncludeAdditionalDataAsync(resultUser, model.IncludeRoleList, user, model.IncludeOnlineStatus, loggedInUsers, model.IncludeIsFriendWith, model.IncludeIsChallanged);
 
             // Return user details to user
             return new ApiResponse<Result_UserProfileDetailsApiModel>
@@ -321,18 +326,17 @@ namespace Fiar
 
             // TODO: Include roles function
 
+            // Get online status
             Dictionary<string, DateTime> loggedInUsers;
             if (!mMemoryCache.TryGetValue(MemoryCacheIdentifiers.LoggedInUsers, out loggedInUsers))
                 loggedInUsers = new Dictionary<string, DateTime>();
 
-            // Get current user
-            var currentUser = await mUserManager.GetUserAsync(User);
             List<UserDataModel> friends = null;
-            if (currentUser != null)
+            if (user != null)
             {
                 // Get all friends of the curretnly logged in user
                 friends = mContext.FriendUserRelations
-                    .Where(o => o.UserId.Equals(currentUser.Id))
+                    .Where(o => o.UserId.Equals(user.Id))
                     .Include(o => o.FriendUser)
                     .Select(o => UserDataModel.Convert(o.FriendUser))
                     .ToList();
@@ -342,9 +346,9 @@ namespace Fiar
                 friends = new List<UserDataModel>();
             }
 
-            // Set online identifier
+            // Set additional user data
             foreach (var u in friends)
-                u.IsOnline = loggedInUsers.ContainsKey(u.Username);
+                await IncludeAdditionalDataAsync(u, model.IncludeRoleList, user, model.IncludeOnlineStatus, loggedInUsers, model.IncludeIsFriendWith, model.IncludeIsChallanged);
 
             // Return user details to user
             return new ApiResponse<Result_UserFriendProfilesApiModel>
@@ -382,19 +386,21 @@ namespace Fiar
                 return errorResponse;
 
             // TODO: Include roles function
+            // TODO: IsFriendWith
 
+            // Get online status
             Dictionary<string, DateTime> loggedInUsers;
             if (!mMemoryCache.TryGetValue(MemoryCacheIdentifiers.LoggedInUsers, out loggedInUsers))
                 loggedInUsers = new Dictionary<string, DateTime>();
 
-            // Get all friends of the curretnly logged in user
+            // Get all users
             List<UserDataModel> users = mContext.Users
                 .Select(o => UserDataModel.Convert(o))
                 .ToList();
 
-            // Set online identifier
+            // Set additional user data
             foreach (var u in users)
-                u.IsOnline = loggedInUsers.ContainsKey(u.Username);
+                await IncludeAdditionalDataAsync(u, model.IncludeRoleList, user, model.IncludeOnlineStatus, loggedInUsers, model.IncludeIsFriendWith, model.IncludeIsChallanged);
 
             // Return user details to user
             return new ApiResponse<Result_GetAllUserProfilesApiModel>
@@ -402,7 +408,7 @@ namespace Fiar
                 // Pass back the user details
                 Response = new Result_GetAllUserProfilesApiModel
                 {
-                    OnlineUserModels = users
+                    UserModels = users
                 }
             };
         }
@@ -491,6 +497,35 @@ namespace Fiar
                 res.Append(valid[rnd.Next(valid.Length)]);
             }
             return res.ToString();
+        }
+
+        /// <summary>
+        /// Include additional data into the user dataw model
+        /// </summary>
+        /// <returns>The same model with additional data included</returns>
+        private async Task IncludeAdditionalDataAsync(UserDataModel user, bool roles = false, ApplicationUser appUser = null, bool onlineStatus = false, Dictionary<string, DateTime> loggedInUserCache = null, bool isFriendWith = false, bool isChallanged = false)
+        {
+            if (roles && appUser != null)
+            {
+                // Get user roles
+                user.RoleList = (await mUserManager.GetRolesAsync(appUser)).ToList();
+            }
+            if (onlineStatus && loggedInUserCache != null)
+            {
+                // Set status
+                user.IsOnline = loggedInUserCache.ContainsKey(user.Username);
+            }
+            if (isFriendWith)
+            {
+                // Set friend relation
+                user.IsFriendWith = mContext.FriendUserRelations.FirstOrDefault(o => o.UserId.Equals(user.Id) && o.FriendUserId.Equals(user.Id)) != null;
+                user.IsFriendWith = mContext.UserRequests.FirstOrDefault(o => o.Type == UserRequestType.Friend && o.UserId.Equals(user.Id) && o.RelatedUserId.Equals(user.Id)) == null ? user.IsFriendWith : null;
+            }
+            if (isChallanged)
+            {
+                // Set challange request status
+                user.IsChallanged = mContext.UserRequests.Where(o => o.Type == UserRequestType.Challange && o.UserId.Equals(user.Id) && o.RelatedUserId.Equals(user.Id)).Count() > 0;
+            }
         }
 
         #endregion

@@ -7,9 +7,18 @@
 </div>
 <div class="container">
     <div class="row">
-        <div class="col-md-4">
+        <div class="col-lg-4">
             <div class="text-center">
-                <h2>Online Players</h2>
+                <h2>All Players</h2>
+            </div>
+            <table class="table player-table">
+                <tbody id="all-users-tbody">
+                </tbody>
+            </table>
+        </div>
+        <div class="col-lg-4">
+            <div class="text-center">
+                <h2>Requests</h2>
             </div>
             <table class="table">
                 <tbody>
@@ -31,51 +40,12 @@
                 </tbody>
             </table>
         </div>
-        <div class="col-md-4">
-            <div class="text-center">
-                <h2>Duel Requests</h2>
-            </div>
-            <table class="table">
-                <tbody>
-                    <tr>
-                        <td>Mark</td>
-                        <td>Otto</td>
-                        <td>mdo</td>
-                    </tr>
-                    <tr>
-                        <th scope="row">2</th>
-                        <td>Jacob</td>
-                        <td>Thornton</td>
-                    </tr>
-                    <tr>
-                        <th scope="row">3</th>
-                        <td>Larry</td>
-                        <td>the Bird</td>
-                    </tr>
-                </tbody>
-            </table>
-        </div>
-        <div class="col-md-4">
+        <div class="col-lg-4">
             <div class="text-center">
                 <h2>Friend List</h2>
             </div>
-            <table class="table">
-                <tbody>
-                    <tr>
-                        <td>Mark</td>
-                        <td>Otto</td>
-                        <td>mdo</td>
-                    </tr>
-                    <tr>
-                        <th scope="row">2</th>
-                        <td>Jacob</td>
-                        <td>Thornton</td>
-                    </tr>
-                    <tr>
-                        <th scope="row">3</th>
-                        <td>Larry</td>
-                        <td>the Bird</td>
-                    </tr>
+            <table class="table player-table">
+                <tbody id="friend-users-tbody">
                 </tbody>
             </table>
         </div>
@@ -86,23 +56,44 @@
     <script>
         // READY
         $(document).ready(function () {
-            updateOnlineUsersFunction();
-            updateFriendListFunction();
+            update();
         });
 
         // FUNCTION
-        // Loop - update online users
-        function updateOnlineUsersFunction() {
+        // Data update loop
+        function update() {
+            updateUsersFunction();
+            updateFriendListFunction();
+
+            // Repeat
+            setTimeout(updateUsersFunction, 10_000);
+            setTimeout(updateFriendListFunction, 10_000);
+        }
+
+        // FUNCTION
+        // Update online users
+        function updateUsersFunction() {
             // AJAX POST
             $.ajax({
                 url: "@ApiRoutes.GetAllUserProfiles",
                 type: "POST",
                 dataType: "json",
                 contentType: 'application/json;charset=utf-8',
-                data: JSON.stringify({ IncludeRoleList: false }),
+                data: JSON.stringify({ IncludeRoleList: false, IncludeOnlineStatus: true, IncludeIsFriendWith: true, IncludeIsChallanged: true }),
                 // Success
                 success: function (data) {
-                    console.log(data);
+                    //console.log(data);
+                    $('#all-users-tbody').empty();
+                    for (var i = 0; i < data.response.userModels.length; ++i) {
+                        appendPlayerTableRow('#all-users-tbody', data.response.userModels[i]);
+                    }
+                    if (data.response.userModels.length == 0) {
+                        $('#all-users-tbody').append(
+                            '<tr>'
+                            + '<td class="text-center">no players</td>'
+                            + '</tr>'
+                        );
+                    }
                 },
                 // Error
                 error: function (data) {
@@ -117,12 +108,10 @@
                     }
                 }
             });
-            // Repeat
-            setTimeout(updateOnlineUsersFunction, 10_000);
         }
 
         // FUNCTION
-        // Loop - update friend list
+        // Update friend list
         function updateFriendListFunction() {
             // AJAX POST
             $.ajax({
@@ -130,10 +119,21 @@
                 type: "POST",
                 dataType: "json",
                 contentType: 'application/json;charset=utf-8',
-                data: JSON.stringify({ IncludeRoleList: false }),
+                data: JSON.stringify({ IncludeRoleList: false, IncludeOnlineStatus: true, IncludeIsFriendWith: true, IncludeIsChallanged: true }),
                 // Success
                 success: function (data) {
-                    console.log(data);
+                    //console.log(data);
+                    $('#friend-users-tbody').empty();
+                    for (var i = 0; i < data.response.friendModels.length; ++i) {
+                        appendPlayerTableRow('#friend-users-tbody', data.response.friendModels[i]);
+                    }
+                    if (data.response.friendModels.length == 0) {
+                        $('#friend-users-tbody').append(
+                            '<tr>'
+                            + '<td class="text-center">no friends</td>'
+                            + '</tr>'
+                        );
+                    }
                 },
                 // Error
                 error: function (data) {
@@ -148,9 +148,20 @@
                     }
                 }
             });
+        }
 
-            // Repeat
-            setTimeout(updateFriendListFunction, 10_000);
+        // FUNCTION
+        // Append player data into a player table row
+        function appendPlayerTableRow(ctx, user) {
+            console.log(user);
+            $(ctx).append(
+                '<tr class="--' + (user.isOnline ? 'online' : 'offline') + '">'
+                + '<td>' + user.nickname + '</td>'
+                + '<td class="status-indicator"><i class="fas fa-circle"></i></td>'
+                + '<td>' + (user.isChallanged ? '' : '<button class="btn btn-dark">CHALLANGE</button>') + '</td>'
+                + '<td data-toggle="tooltip" title="' + (user.isFriendWith == null ? '' : (user.isFriendWith ? 'Remove from friend list' : 'Create a new friend request')) + '">' + (user.isFriendWith == null ? '' : (user.isFriendWith ? '<button class="btn btn-danger"><i class="fas fa-user-minus"></i></button>' : '<button class="btn btn-success"><i class="fas fa-user-plus"></i></button>')) + '</td>'
+                + '</tr>'
+            );
         }
     </script>
 }

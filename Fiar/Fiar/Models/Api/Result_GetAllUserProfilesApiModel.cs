@@ -10,6 +10,6 @@ namespace Fiar
         /// <summary>
         /// The user models
         /// </summary>
-        public List<UserDataModel> OnlineUserModels { get; set; }
+        public List<UserDataModel> UserModels { get; set; }
     }
 }

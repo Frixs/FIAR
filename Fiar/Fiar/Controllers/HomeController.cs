@@ -105,6 +105,36 @@ namespace Fiar
         }
 
         /// <summary>
+        /// Creates the admin user (only during initialization - no users exist)
+        /// </summary>
+        [Route(WebRoutes.InitializeRequest)]
+        public async Task<IActionResult> InitializeRequestAsync()
+        {
+            // If any user already exists
+            if (mUserManager.Users.Any())
+                return RedirectToAction(nameof(Index));
+
+            // Create roles
+            await mRoleManager.CreateAsync(new IdentityRole(RoleNames.Administrator));
+            await mRoleManager.CreateAsync(new IdentityRole(RoleNames.Player));
+
+            // Define new user
+            var user = new ApplicationUser
+            {
+                UserName = "admin",
+                Email = "admin@fiar.admin",
+                Nickname = "Administrator69",
+            };
+            // Create admin with default password
+            var result = await mUserManager.CreateAsync(user, "Admin123456789");
+            // Add administrator role to the newly created user
+            await mUserManager.AddToRoleAsync(user, RoleNames.Administrator);
+            await mUserManager.AddToRoleAsync(user, RoleNames.Player);
+
+            return RedirectToAction(nameof(Index));
+        }
+
+        /// <summary>
         /// Dump config-box
         /// </summary>
         /// <returns></returns>
@@ -127,37 +157,6 @@ namespace Fiar
         #endregion
 
         #region Requests
-
-        /// <summary>
-        /// Creates the admin user (only during initialization - no users exist)
-        /// </summary>
-        /// <returns></returns>
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        [Route(WebRoutes.InitializeRequest)]
-        public async Task<IActionResult> InitializeRequestAsync()
-        {
-            // If any user already exists
-            if (mUserManager.Users.Any())
-                return RedirectToAction(nameof(Index));
-
-            // Create roles
-            await mRoleManager.CreateAsync(new IdentityRole(RoleNames.Administrator));
-            await mRoleManager.CreateAsync(new IdentityRole(RoleNames.Player));
-
-            // Define new user
-            var user = new ApplicationUser
-            {
-                UserName = "admin",
-                Email = "admin@fiar.admin",
-            };
-            // Create admin with default password
-            var result = await mUserManager.CreateAsync(user, "Admin123456789");
-            // Add administrator role to the newly created user
-            await mUserManager.AddToRoleAsync(user, RoleNames.Administrator);
-
-            return RedirectToAction(nameof(Index));
-        }
 
         /// <summary>
         /// An login page request

@@ -15,6 +15,11 @@ namespace Fiar
         /// </summary>
         public DbSet<FriendUserRelationDataModel> FriendUserRelations { get; set; }
 
+        /// <summary>
+        /// The user requests
+        /// </summary>
+        public DbSet<UserRequestDataModel> UserRequests { get; set; }
+
         #endregion
 
         #region Public Properties (Game)
@@ -80,6 +85,28 @@ namespace Fiar
                 .HasOne(o => o.FriendUser)
                 .WithMany(o => o.BeingFriendOfs)
                 .HasForeignKey(o => o.FriendUserId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            #endregion
+
+            #region UserRequests
+
+            // Configure UserRequests
+            // ------------------------------
+            //
+            // Set Id as primary key
+            modelBuilder.Entity<UserRequestDataModel>().HasKey(o => o.Id);
+            // Set Foreign Key (user-side)
+            modelBuilder.Entity<UserRequestDataModel>()
+                .HasOne(o => o.User)
+                .WithMany(o => o.Requests)
+                .HasForeignKey(o => o.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+            // Set Foreign Key (related-user-side)
+            modelBuilder.Entity<UserRequestDataModel>()
+                .HasOne(o => o.RelatedUser)
+                .WithMany(o => o.RelatedRequests)
+                .HasForeignKey(o => o.RelatedUserId)
                 .OnDelete(DeleteBehavior.Cascade);
 
             #endregion

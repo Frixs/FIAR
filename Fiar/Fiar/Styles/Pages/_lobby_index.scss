@@ -1,0 +1,31 @@
+﻿@import "../Utils/module";
+
+.player-table {
+    tr {
+        td {
+            vertical-align: middle;
+        }
+
+        &.--online {
+            td.status-indicator {
+                color: $color-success;
+            }
+        }
+
+        &.--offline {
+            td.status-indicator {
+                color: $color-danger;
+            }
+        }
+
+        td > button {
+            padding: 0;
+            margin: 0;
+            height: 28px;
+            font-size: 12px;
+            padding-left: 10px;
+            padding-right: 10px;
+            font-weight: bold;
+        }
+    }
+}

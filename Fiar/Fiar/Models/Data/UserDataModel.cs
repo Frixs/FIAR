@@ -129,6 +129,24 @@ namespace Fiar
         [ValidateIgnore]
         public bool? IsOnline { get; set; }
 
+        /// <summary>
+        /// If not null, it indicates if the user is a friend of the currently logged in user
+        /// </summary>
+        /// <remarks>
+        ///     Separate value - helper value
+        /// </remarks>
+        [ValidateIgnore]
+        public bool? IsFriendWith { get; set; }
+
+        /// <summary>
+        /// If not null, it indicates if the user is challanged by another user (request)
+        /// </summary>
+        /// <remarks>
+        ///     Separate value - helper value
+        /// </remarks>
+        [ValidateIgnore]
+        public bool? IsChallanged { get; set; }
+
         #endregion
 
         #region Helpers
