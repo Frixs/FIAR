@@ -1,4 +1,5 @@
 ﻿using Fiar.Attributes;
+using System;
 
 namespace Fiar
 {
@@ -59,6 +60,12 @@ namespace Fiar
         /// </summary>
         [ValidateIgnore]
         public UserRequestType Type { get; set; }
+
+        /// <summary>
+        /// Request created at
+        /// </summary>
+        [ValidateIgnore]
+        public DateTime CreatedAt { get; set; } = default;
 
         #endregion
     }

@@ -61,6 +61,15 @@ namespace Fiar.Localization {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Failed to add new user request..
+        /// </summary>
+        internal static string ApiController_AddUserRequest_FailedErrorMsg {
+            get {
+                return ResourceManager.GetString("ApiController_AddUserRequest_FailedErrorMsg", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Invalid username or password.
         /// </summary>
         internal static string ApiController_Login_InvalidCredentialsErrorMsg {

@@ -44,5 +44,10 @@
         /// The route to the API method
         /// </summary>
         public const string GetUserRequests = "/api/user/requests";
+
+        /// <summary>
+        /// The route to the API method
+        /// </summary>
+        public const string AddUserRequest = "/api/user/request/add";
     }
 }

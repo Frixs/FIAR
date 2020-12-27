@@ -335,13 +335,14 @@ namespace Fiar
                 .Where(o => o.UserId.Equals(user.Id))
                 .Include(o => o.FriendUser)
                 .Select(o => UserDataModel.Convert(o.FriendUser))
+                .ToList().OrderBy(o => o.Nickname)
                 .ToList();
 
             // Set additional user data
             foreach (var u in friends)
                 await IncludeAdditionalDataAsync(u, user, model.IncludeRoleList, model.IncludeOnlineStatus, loggedInUsers, model.IncludeIsFriendWith, model.IncludeIsChallanged);
 
-            // Return user details to user
+            // Return successful response
             return new ApiResponse<Result_UserFriendProfilesApiModel>
             {
                 // Pass back the user details
@@ -384,6 +385,7 @@ namespace Fiar
 
             // Get all users
             List<UserDataModel> users = mContext.Users
+                .OrderBy(o => o.Nickname)
                 .Select(o => UserDataModel.Convert(o))
                 .ToList();
 
@@ -391,7 +393,7 @@ namespace Fiar
             foreach (var u in users)
                 await IncludeAdditionalDataAsync(u, user, model.IncludeRoleList, model.IncludeOnlineStatus, loggedInUsers, model.IncludeIsFriendWith, model.IncludeIsChallanged);
 
-            // Return user details to user
+            // Return successful response
             return new ApiResponse<Result_AllUserProfilesApiModel>
             {
                 // Pass back the user details
@@ -434,6 +436,7 @@ namespace Fiar
 
             // Get all users
             List<UserDataModel> users = mContext.Users
+                .OrderBy(o => o.Nickname)
                 .Select(o => UserDataModel.Convert(o))
                 .ToList();
 
@@ -446,7 +449,7 @@ namespace Fiar
                     resultUsers.Add(u);
             }
 
-            // Return user details to user
+            // Return successful response
             return new ApiResponse<Result_OnlineUserProfilesApiModel>
             {
                 // Pass back the user details
@@ -482,9 +485,6 @@ namespace Fiar
                 // Return failed response
                 return errorResponse;
 
-            // TODO: Include roles function
-            // TODO: IsFriendWith
-
             // Get online status
             Dictionary<string, DateTime> loggedInUsers;
             if (!mMemoryCache.TryGetValue(MemoryCacheIdentifiers.LoggedInUsers, out loggedInUsers))
@@ -494,6 +494,7 @@ namespace Fiar
             var requests = mContext.UserRequests
                 .Where(o => o.RelatedUserId.Equals(user.Id))
                 .Include(o => o.User)
+                .OrderByDescending(o => o.CreatedAt)
                 .ToList();
 
             List<UserRequestViewModel> resultRequests = new List<UserRequestViewModel>();
@@ -520,6 +521,55 @@ namespace Fiar
                 }
             };
         }
+
+        /// <summary>
+        /// Returns the user requests based on the authenticated user
+        /// </summary>
+        [HttpPost]
+        [Route(ApiRoutes.AddUserRequest)]
+        public async Task<ApiResponse> AddUserRequestAsync([FromBody] Add_UserRequestApiModel model)
+        {
+            #region Get/Check User
+
+            // Get user by the claims
+            var user = await mUserManager.GetUserAsync(HttpContext.User);
+            // If user does not have authorization...
+            if (!await AuthorizeUserAsync(user, PolicyNames.PlayerLevel))
+                // Return user auth error response
+                return GetAuthorizationErrorApiResponse(Localization.Resource.AuthError_UserNotFound);
+
+            #endregion
+
+            // The error message to user
+            var errorResponse = new ApiResponse { ErrorMessage = Localization.Resource.ApiController_ValidationErrorMsg };
+            // If we have no model...
+            if (model == null)
+                // Return failed response
+                return errorResponse;
+
+            // Check the user exists
+            if (mContext.Users.Any(o => o.Id.Equals(model.RelatedUserId)))
+            {
+                // Add
+                mContext.UserRequests.Add(new UserRequestDataModel
+                {
+                    UserId = user.Id,
+                    RelatedUserId = model.RelatedUserId,
+                    Type = model.Type,
+                    CreatedAt = DateTime.Now
+                });
+
+                // Save changes
+                var affectedRows = mContext.SaveChanges();
+                if (affectedRows > 0)
+                    // Return successful response
+                    return new ApiResponse();
+            }
+
+            // Failed
+            return new ApiResponse { ErrorMessage = Localization.Resource.ApiController_AddUserRequest_FailedErrorMsg };
+        }
+
 
         #endregion
 
@@ -626,13 +676,18 @@ namespace Fiar
             if (isFriendWith && !user.Id.Equals(appUser.Id))
             {
                 // Set friend relation
-                user.IsFriendWith = mContext.FriendUserRelations.FirstOrDefault(o => o.UserId.Equals(user.Id) && o.FriendUserId.Equals(user.Id)) != null;
-                user.IsFriendWith = mContext.UserRequests.FirstOrDefault(o => o.Type == UserRequestType.Friend && o.UserId.Equals(user.Id) && o.RelatedUserId.Equals(user.Id)) == null ? user.IsFriendWith : null;
+                user.IsFriendWith = mContext.FriendUserRelations.FirstOrDefault(o => o.UserId.Equals(user.Id) && o.FriendUserId.Equals(appUser.Id)) != null;
+                user.IsFriendWith = mContext.UserRequests.FirstOrDefault(o => o.Type == UserRequestType.Friend && o.UserId.Equals(user.Id) && o.RelatedUserId.Equals(appUser.Id)) == null ? user.IsFriendWith : null;
             }
             if (isChallanged && !user.Id.Equals(appUser.Id))
             {
                 // Set challange request status
-                user.IsChallanged = mContext.UserRequests.Where(o => o.Type == UserRequestType.Challange && o.UserId.Equals(user.Id) && o.RelatedUserId.Equals(user.Id)).Count() > 0;
+                user.IsChallanged = mContext.UserRequests
+                    .Where(o => 
+                        (o.Type == UserRequestType.Challange && o.UserId.Equals(user.Id) && o.RelatedUserId.Equals(appUser.Id))
+                        || o.Type == UserRequestType.Challange && o.UserId.Equals(appUser.Id) && o.RelatedUserId.Equals(user.Id)
+                        )
+                    .Count() > 0;
             }
         }
 

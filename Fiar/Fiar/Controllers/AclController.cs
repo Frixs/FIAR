@@ -85,7 +85,7 @@ namespace Fiar
             result.Users = new List<UserProfileViewModel>();
 
             // Get all existing users
-            var users = mContext.Users.ToList();
+            var users = mContext.Users.OrderBy(o => o.UserName).ToList();
             foreach (var u in users)
             {
                 // Create user profile view model

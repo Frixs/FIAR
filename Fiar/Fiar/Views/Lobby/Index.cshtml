@@ -5,9 +5,9 @@
 <div class="text-center">
     <h1 class="display-4">Lobby</h1>
 </div>
-<div class="container">
+<div id="lobby-index-container" class="container">
     <div class="row">
-        <div class="col-lg-4">
+        <div class="col-xl-4">
             <div class="text-center">
                 <h2>Online Players</h2>
             </div>
@@ -16,7 +16,7 @@
                 </tbody>
             </table>
         </div>
-        <div class="col-lg-4">
+        <div class="col-xl-4">
             <div class="text-center">
                 <h2>Requests</h2>
             </div>
@@ -25,7 +25,7 @@
                 </tbody>
             </table>
         </div>
-        <div class="col-lg-4">
+        <div class="col-xl-4">
             <div class="text-center">
                 <h2>Friend List</h2>
             </div>
@@ -44,6 +44,14 @@
             update();
         });
 
+        // Events
+        $(document).on('click', '.challange-btn', function () {
+            console.log("click");
+            let uid = $(this).attr('data-uid');
+            addUserRequestFunction(@((int)UserRequestType.Challange), uid);
+            $(this).remove();
+        });
+
         // FUNCTION
         // Data update loop
         function update() {
@@ -52,9 +60,7 @@
             updateFriendListFunction();
 
             // Repeat
-            setTimeout(updateUsersFunction, 10_000);
-            setTimeout(updateRequestsFunction, 10_000);
-            setTimeout(updateFriendListFunction, 10_000);
+            setTimeout(update, 10_000);
         }
 
         // FUNCTION
@@ -109,15 +115,15 @@
                 data: JSON.stringify({ IncludeRoleList: false, IncludeOnlineStatus: true, IncludeIsFriendWith: false, IncludeIsChallanged: false }),
                 // Success
                 success: function (data) {
-                    //console.log(data);
                     $('#requests-tbody').empty();
                     for (var i = 0; i < data.response.requestModels.length; ++i) {
-                        console.log(data.response.requestModels[i]);
                         $('#requests-tbody').append(
                             '<tr class="--' + (data.response.requestModels[i].user.isOnline ? 'online' : 'offline') + '">'
                             + '<td>' + data.response.requestModels[i].user.nickname + '</td>'
                             + '<td class="status-indicator"><i class="fas fa-circle"></i></td>'
-                            + '<td>' + (data.response.requestModels[i].type ? '' : '<button class="btn btn-dark">CHALLANGE</button>') + '</td>'
+                            + '<td><b>' + (data.response.requestModels[i].type == @((int)UserRequestType.Challange) ? 'CHALLANGE' : 'FRIEND') + '</b></td>'
+                            + '<td>' + (data.response.requestModels[i].type == @((int)UserRequestType.Challange) ? '<button class="btn btn-success lobby-table-btn">ACCEPT</button>' : '') + '</td>'
+                            + '<td>' + (data.response.requestModels[i].type == @((int)UserRequestType.Challange) ? '<button class="btn btn-danger lobby-table-btn">DECLINE</button>' : '') + '</td>'
                             + '</tr>'
                         );
                     }
@@ -185,14 +191,44 @@
         }
 
         // FUNCTION
+        // Add a new user request task
+        function addUserRequestFunction(rtype, uid) {
+            // AJAX POST
+            $.ajax({
+                url: "@ApiRoutes.AddUserRequest",
+                type: "POST",
+                dataType: "json",
+                contentType: 'application/json;charset=utf-8',
+                data: JSON.stringify({ Type: rtype, RelatedUserId: uid }),
+                // Success
+                success: function (data) {
+                    console.log(data);
+                    // TODO
+                },
+                // Error
+                error: function (data) {
+                    alert(data.status);
+                    // If unauthorized error...
+                    if (data.status == 401) {
+                        window.alert = function () { };
+                        window.location.href = "@(WebRoutes.Login)";
+                    } else {
+                        window.alert = function () { };
+                        window.location.href = "@(WebRoutes.Error500)";
+                    }
+                }
+            });
+        }
+
+        // FUNCTION
         // Append player data into a player table row
         function appendPlayerTableRow(ctx, user) {
             $(ctx).append(
                 '<tr class="--' + (user.isOnline ? 'online' : 'offline') + '">'
                 + '<td>' + user.nickname + '</td>'
                 + '<td class="status-indicator"><i class="fas fa-circle"></i></td>'
-                + '<td>' + (user.isChallanged == null ? '' : (user.isChallanged ? '' : '<button class="btn btn-dark">CHALLANGE</button>')) + '</td>'
-                + '<td data-toggle="tooltip" title="' + (user.isFriendWith == null ? '' : (user.isFriendWith ? 'Remove from friend list' : 'Create a new friend request')) + '">' + (user.isFriendWith == null ? '' : (user.isFriendWith ? '<button class="btn btn-danger"><i class="fas fa-user-minus"></i></button>' : '<button class="btn btn-success"><i class="fas fa-user-plus"></i></button>')) + '</td>'
+                + '<td>' + (user.isChallanged == null ? '' : (user.isChallanged ? '' : '<button class="btn btn-dark lobby-table-btn challange-btn" data-uid="' + user.id + '">CHALLANGE</button>')) + '</td>'
+                + '<td data-toggle="tooltip" title="' + (user.isFriendWith == null ? '' : (user.isFriendWith ? 'Remove from friend list' : 'Create a new friend request')) + '">' + (user.isFriendWith == null ? '' : (user.isFriendWith ? '<button class="btn btn-danger lobby-table-btn"><i class="fas fa-user-minus"></i></button>' : '<button class="btn btn-success lobby-table-btn"><i class="fas fa-user-plus"></i></button>')) + '</td>'
                 + '</tr>'
             );
         }
