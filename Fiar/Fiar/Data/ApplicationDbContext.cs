@@ -108,6 +108,8 @@ namespace Fiar
                 .WithMany(o => o.RelatedRequests)
                 .HasForeignKey(o => o.RelatedUserId)
                 .OnDelete(DeleteBehavior.Cascade);
+            // Set up indexed/unique columns
+            modelBuilder.Entity<UserRequestDataModel>().HasIndex(o => o.Type);
 
             #endregion
 

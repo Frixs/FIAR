@@ -61,11 +61,38 @@ namespace Fiar.Localization {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Failed to add a new friend.
+        /// </summary>
+        internal static string ApiController_AddUserFriendByRequest_FailedErrorMsg {
+            get {
+                return ResourceManager.GetString("ApiController_AddUserFriendByRequest_FailedErrorMsg", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Failed to add new user request..
         /// </summary>
         internal static string ApiController_AddUserRequest_FailedErrorMsg {
             get {
                 return ResourceManager.GetString("ApiController_AddUserRequest_FailedErrorMsg", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Failed to delete friend relation.
+        /// </summary>
+        internal static string ApiController_DeleteUserFriend_FailedErrorMsg {
+            get {
+                return ResourceManager.GetString("ApiController_DeleteUserFriend_FailedErrorMsg", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Failed to delete.
+        /// </summary>
+        internal static string ApiController_DeleteUserRequest_FailedErrorMsg {
+            get {
+                return ResourceManager.GetString("ApiController_DeleteUserRequest_FailedErrorMsg", resourceCulture);
             }
         }
         

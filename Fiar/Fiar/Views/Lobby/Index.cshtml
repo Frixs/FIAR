@@ -5,7 +5,7 @@
 <div class="text-center">
     <h1 class="display-4">Lobby</h1>
 </div>
-<div id="lobby-index-container" class="container">
+<div id="lobby-index-container" class="container-fluid">
     <div class="row">
         <div class="col-xl-4">
             <div class="text-center">
@@ -46,10 +46,31 @@
 
         // Events
         $(document).on('click', '.challange-btn', function () {
-            console.log("click");
-            let uid = $(this).attr('data-uid');
+            let uid = $(this).closest('tr').attr('data-uid');
             addUserRequestFunction(@((int)UserRequestType.Challange), uid);
             $(this).remove();
+        });
+        $(document).on('click', '.add-friend-btn', function () {
+            let uid = $(this).closest('tr').attr('data-uid');
+            addUserRequestFunction(@((int)UserRequestType.Friend), uid);
+            $(this).remove();
+        });
+        $(document).on('click', '.remove-friend-btn', function () {
+            let uid = $(this).closest('tr').attr('data-uid');
+            deleteUserFriendFunction(uid);
+            $(this).remove();
+        });
+        $(document).on('click', '.accept-request-btn', function () {
+            let rid = $(this).closest('tr').attr('data-rid');
+            let rtype = $(this).closest('tr').attr('data-rtype');
+            let uid = $(this).closest('tr').attr('data-uid');
+            acceptRequestFunction(parseInt(rid), rtype, uid);
+            $(this).closest('tr').remove();
+        });
+        $(document).on('click', '.decline-request-btn', function () {
+            let rid = $(this).closest('tr').attr('data-rid');
+            deleteUserRequestFunction(parseInt(rid));
+            $(this).closest('tr').remove();
         });
 
         // FUNCTION
@@ -90,7 +111,6 @@
                 },
                 // Error
                 error: function (data) {
-                    alert(data.status);
                     // If unauthorized error...
                     if (data.status == 401) {
                         window.alert = function () { };
@@ -118,12 +138,12 @@
                     $('#requests-tbody').empty();
                     for (var i = 0; i < data.response.requestModels.length; ++i) {
                         $('#requests-tbody').append(
-                            '<tr class="--' + (data.response.requestModels[i].user.isOnline ? 'online' : 'offline') + '">'
+                            '<tr class="--' + (data.response.requestModels[i].user.isOnline ? 'online' : 'offline') + '" data-rid="' + data.response.requestModels[i].id + '" data-rtype="' + data.response.requestModels[i].type + '" data-uid="' + data.response.requestModels[i].user.id + '">'
                             + '<td>' + data.response.requestModels[i].user.nickname + '</td>'
                             + '<td class="status-indicator"><i class="fas fa-circle"></i></td>'
                             + '<td><b>' + (data.response.requestModels[i].type == @((int)UserRequestType.Challange) ? 'CHALLANGE' : 'FRIEND') + '</b></td>'
-                            + '<td>' + (data.response.requestModels[i].type == @((int)UserRequestType.Challange) ? '<button class="btn btn-success lobby-table-btn">ACCEPT</button>' : '') + '</td>'
-                            + '<td>' + (data.response.requestModels[i].type == @((int)UserRequestType.Challange) ? '<button class="btn btn-danger lobby-table-btn">DECLINE</button>' : '') + '</td>'
+                            + '<td><button class="btn btn-success lobby-table-btn accept-request-btn">ACCEPT</button></td>'
+                            + '<td><button class="btn btn-danger lobby-table-btn decline-request-btn">DECLINE</button></td>'
                             + '</tr>'
                         );
                     }
@@ -137,7 +157,6 @@
                 },
                 // Error
                 error: function (data) {
-                    alert(data.status);
                     // If unauthorized error...
                     if (data.status == 401) {
                         window.alert = function () { };
@@ -177,7 +196,6 @@
                 },
                 // Error
                 error: function (data) {
-                    alert(data.status);
                     // If unauthorized error...
                     if (data.status == 401) {
                         window.alert = function () { };
@@ -202,12 +220,10 @@
                 data: JSON.stringify({ Type: rtype, RelatedUserId: uid }),
                 // Success
                 success: function (data) {
-                    console.log(data);
-                    // TODO
+                    // user feedback here
                 },
                 // Error
                 error: function (data) {
-                    alert(data.status);
                     // If unauthorized error...
                     if (data.status == 401) {
                         window.alert = function () { };
@@ -221,14 +237,102 @@
         }
 
         // FUNCTION
+        // Delete a user request task
+        function deleteUserRequestFunction(rid) {
+            // AJAX POST
+            $.ajax({
+                url: "@ApiRoutes.DeleteUserRequest",
+                type: "POST",
+                dataType: "json",
+                contentType: 'application/json;charset=utf-8',
+                data: JSON.stringify({ Id: rid }),
+                // Success
+                success: function (data) {
+                    // user feedback here
+                },
+                // Error
+                error: function (data) {
+                    // If unauthorized error...
+                    if (data.status == 401) {
+                        window.alert = function () { };
+                        window.location.href = "@(WebRoutes.Login)";
+                    } else {
+                        window.alert = function () { };
+                        window.location.href = "@(WebRoutes.Error500)";
+                    }
+                }
+            });
+        }
+
+        // FUNCTION
+        // Delete user friend task
+        function deleteUserFriendFunction(uid) {
+            // AJAX POST
+            $.ajax({
+                url: "@ApiRoutes.DeleteUserFriend",
+                type: "POST",
+                dataType: "json",
+                contentType: 'application/json;charset=utf-8',
+                data: JSON.stringify({ FriendUserId: uid }),
+                // Success
+                success: function (data) {
+                    // user feedback here
+                },
+                // Error
+                error: function (data) {
+                    // If unauthorized error...
+                    if (data.status == 401) {
+                        window.alert = function () { };
+                        window.location.href = "@(WebRoutes.Login)";
+                    } else {
+                        window.alert = function () { };
+                        window.location.href = "@(WebRoutes.Error500)";
+                    }
+                }
+            });
+        }
+
+        // FUNCTION
+        // Accept user request task
+        function acceptRequestFunction(rid, rtype, uid) {
+            if (rtype == @((int)UserRequestType.Challange)) {
+                console.log("TODO");
+            } else {
+                // AJAX POST
+                $.ajax({
+                    url: "@ApiRoutes.AddUserFriendByRequest",
+                    type: "POST",
+                    dataType: "json",
+                    contentType: 'application/json;charset=utf-8',
+                    data: JSON.stringify({ Id: rid, FriendUserId: uid }),
+                    // Success
+                    success: function (data) {
+                        // user feedback here
+                    },
+                    // Error
+                    error: function (data) {
+                        // If unauthorized error...
+                        if (data.status == 401) {
+                            window.alert = function () { };
+                            window.location.href = "@(WebRoutes.Login)";
+                        } else {
+                            window.alert = function () { };
+                            window.location.href = "@(WebRoutes.Error500)";
+                        }
+                    }
+                });
+            }
+        }
+
+        // FUNCTION
         // Append player data into a player table row
         function appendPlayerTableRow(ctx, user) {
             $(ctx).append(
-                '<tr class="--' + (user.isOnline ? 'online' : 'offline') + '">'
+                '<tr class="--' + (user.isOnline ? 'online' : 'offline') + '" data-uid="' + user.id + '">'
                 + '<td>' + user.nickname + '</td>'
                 + '<td class="status-indicator"><i class="fas fa-circle"></i></td>'
-                + '<td>' + (user.isChallanged == null ? '' : (user.isChallanged ? '' : '<button class="btn btn-dark lobby-table-btn challange-btn" data-uid="' + user.id + '">CHALLANGE</button>')) + '</td>'
-                + '<td data-toggle="tooltip" title="' + (user.isFriendWith == null ? '' : (user.isFriendWith ? 'Remove from friend list' : 'Create a new friend request')) + '">' + (user.isFriendWith == null ? '' : (user.isFriendWith ? '<button class="btn btn-danger lobby-table-btn"><i class="fas fa-user-minus"></i></button>' : '<button class="btn btn-success lobby-table-btn"><i class="fas fa-user-plus"></i></button>')) + '</td>'
+                + '<td>' + (user.isChallanged == null ? '' : (user.isChallanged ? '' : '<button class="btn btn-dark lobby-table-btn challange-btn">CHALLANGE</button>')) + '</td>'
+                + '<td>' + (user.isFriendWith == null ? '' : (user.isFriendWith ? '<button class="btn btn-danger lobby-table-btn remove-friend-btn"><i class="fas fa-user-minus"></i></button>' : '<button class="btn btn-success lobby-table-btn add-friend-btn"><i class="fas fa-user-plus"></i></button>')) + '</td>'
                 + '</tr>'
             );
         }

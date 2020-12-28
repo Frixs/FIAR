@@ -49,5 +49,20 @@
         /// The route to the API method
         /// </summary>
         public const string AddUserRequest = "/api/user/request/add";
+
+        /// <summary>
+        /// The route to the API method
+        /// </summary>
+        public const string DeleteUserRequest = "/api/user/request/delete";
+
+        /// <summary>
+        /// The route to the API method
+        /// </summary>
+        public const string AddUserFriendByRequest = "/api/user/friend/add/request";
+
+        /// <summary>
+        /// The route to the API method
+        /// </summary>
+        public const string DeleteUserFriend = "/api/user/friend/delete";
     }
 }

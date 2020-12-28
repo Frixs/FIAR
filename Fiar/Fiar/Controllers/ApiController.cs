@@ -523,7 +523,7 @@ namespace Fiar
         }
 
         /// <summary>
-        /// Returns the user requests based on the authenticated user
+        /// Adds a new user request
         /// </summary>
         [HttpPost]
         [Route(ApiRoutes.AddUserRequest)]
@@ -548,7 +548,9 @@ namespace Fiar
                 return errorResponse;
 
             // Check the user exists
-            if (mContext.Users.Any(o => o.Id.Equals(model.RelatedUserId)))
+            if (mContext.Users.Any(o => o.Id.Equals(model.RelatedUserId)) 
+                && !mContext.UserRequests.Any(o => o.Type == model.Type && o.UserId.Equals(user.Id) && o.RelatedUserId.Equals(model.RelatedUserId))
+                )
             {
                 // Add
                 mContext.UserRequests.Add(new UserRequestDataModel
@@ -570,6 +572,142 @@ namespace Fiar
             return new ApiResponse { ErrorMessage = Localization.Resource.ApiController_AddUserRequest_FailedErrorMsg };
         }
 
+        /// <summary>
+        /// Removes the user request
+        /// </summary>
+        [HttpPost]
+        [Route(ApiRoutes.DeleteUserRequest)]
+        public async Task<ApiResponse> DeleteUserRequestAsync([FromBody] Get_UserRequestApiModel model)
+        {
+            #region Get/Check User
+
+            // Get user by the claims
+            var user = await mUserManager.GetUserAsync(HttpContext.User);
+            // If user does not have authorization...
+            if (!await AuthorizeUserAsync(user, PolicyNames.PlayerLevel))
+                // Return user auth error response
+                return GetAuthorizationErrorApiResponse(Localization.Resource.AuthError_UserNotFound);
+
+            #endregion
+
+            // The error message to user
+            var errorResponse = new ApiResponse { ErrorMessage = Localization.Resource.ApiController_ValidationErrorMsg };
+            // If we have no model...
+            if (model == null)
+                // Return failed response
+                return errorResponse;
+
+            var item = mContext.UserRequests.FirstOrDefault(o => o.Id == model.Id && o.RelatedUserId.Equals(user.Id));
+            // Check the item exists
+            if (item != null)
+            {
+                // Delete
+                mContext.UserRequests.Remove(item);
+
+                // Save changes
+                var affectedRows = mContext.SaveChanges();
+                if (affectedRows > 0)
+                    // Return successful response
+                    return new ApiResponse();
+            }
+
+            // Failed
+            return new ApiResponse { ErrorMessage = Localization.Resource.ApiController_DeleteUserRequest_FailedErrorMsg };
+        }
+
+        /// <summary>
+        /// Adds a new user friend to the currently authenticated user
+        /// </summary>
+        [HttpPost]
+        [Route(ApiRoutes.AddUserFriendByRequest)]
+        public async Task<ApiResponse> AddUserFriendByRequestAsync([FromBody] Add_UserFriendByRequestApiModel model)
+        {
+            #region Get/Check User
+
+            // Get user by the claims
+            var user = await mUserManager.GetUserAsync(HttpContext.User);
+            // If user does not have authorization...
+            if (!await AuthorizeUserAsync(user, PolicyNames.PlayerLevel))
+                // Return user auth error response
+                return GetAuthorizationErrorApiResponse(Localization.Resource.AuthError_UserNotFound);
+
+            #endregion
+
+            // The error message to user
+            var errorResponse = new ApiResponse { ErrorMessage = Localization.Resource.ApiController_ValidationErrorMsg };
+            // If we have no model...
+            if (model == null)
+                // Return failed response
+                return errorResponse;
+
+            var item = mContext.UserRequests.FirstOrDefault(o => o.Id == model.Id && o.RelatedUserId.Equals(user.Id));
+            // Check the user exists
+            if (item != null
+                && !mContext.FriendUserRelations.Any(o => o.UserId.Equals(model.FriendUserId) && o.FriendUserId.Equals(user.Id))
+                )
+            {
+                // Add
+                mContext.FriendUserRelations.Add(new FriendUserRelationDataModel
+                {
+                    UserId = model.FriendUserId,
+                    FriendUserId = user.Id
+                });
+                // Remove the request
+                mContext.Remove(item);
+
+                // Save changes
+                var affectedRows = mContext.SaveChanges();
+                if (affectedRows > 1)
+                    // Return successful response
+                    return new ApiResponse();
+            }
+
+            // Failed
+            return new ApiResponse { ErrorMessage = Localization.Resource.ApiController_AddUserFriendByRequest_FailedErrorMsg };
+        }
+
+        /// <summary>
+        /// Removes a user friend to the currently authenticated user
+        /// </summary>
+        [HttpPost]
+        [Route(ApiRoutes.DeleteUserFriend)]
+        public async Task<ApiResponse> DeleteUserFriendAsync([FromBody] Get_UserFriendApiModel model)
+        {
+            #region Get/Check User
+
+            // Get user by the claims
+            var user = await mUserManager.GetUserAsync(HttpContext.User);
+            // If user does not have authorization...
+            if (!await AuthorizeUserAsync(user, PolicyNames.PlayerLevel))
+                // Return user auth error response
+                return GetAuthorizationErrorApiResponse(Localization.Resource.AuthError_UserNotFound);
+
+            #endregion
+
+            // The error message to user
+            var errorResponse = new ApiResponse { ErrorMessage = Localization.Resource.ApiController_ValidationErrorMsg };
+            // If we have no model...
+            if (model == null)
+                // Return failed response
+                return errorResponse;
+
+            var item = mContext.FriendUserRelations.FirstOrDefault(o => o.UserId == user.Id && o.FriendUserId.Equals(model.FriendUserId));
+            // Check the item exists
+            if (item != null)
+            {
+                // Delete
+                mContext.FriendUserRelations.Remove(item);
+
+                // Save changes
+                var affectedRows = mContext.SaveChanges();
+                if (affectedRows > 0)
+                    // Return successful response
+                    return new ApiResponse();
+            }
+
+            // Failed
+            return new ApiResponse { ErrorMessage = Localization.Resource.ApiController_DeleteUserFriend_FailedErrorMsg };
+        }
 
         #endregion
 
@@ -676,8 +814,8 @@ namespace Fiar
             if (isFriendWith && !user.Id.Equals(appUser.Id))
             {
                 // Set friend relation
-                user.IsFriendWith = mContext.FriendUserRelations.FirstOrDefault(o => o.UserId.Equals(user.Id) && o.FriendUserId.Equals(appUser.Id)) != null;
-                user.IsFriendWith = mContext.UserRequests.FirstOrDefault(o => o.Type == UserRequestType.Friend && o.UserId.Equals(user.Id) && o.RelatedUserId.Equals(appUser.Id)) == null ? user.IsFriendWith : null;
+                user.IsFriendWith = mContext.FriendUserRelations.FirstOrDefault(o => o.UserId.Equals(appUser.Id) && o.FriendUserId.Equals(user.Id)) != null;
+                user.IsFriendWith = mContext.UserRequests.FirstOrDefault(o => o.Type == UserRequestType.Friend && o.UserId.Equals(appUser.Id) && o.RelatedUserId.Equals(user.Id)) == null ? user.IsFriendWith : null;
             }
             if (isChallanged && !user.Id.Equals(appUser.Id))
             {
