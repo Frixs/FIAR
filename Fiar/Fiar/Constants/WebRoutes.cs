@@ -23,6 +23,11 @@
         /// <summary>
         /// The route to the web page
         /// </summary>
+        public const string Error400 = "/400";
+
+        /// <summary>
+        /// The route to the web page
+        /// </summary>
         public const string Error401 = "/401";
 
         /// <summary>

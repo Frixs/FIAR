@@ -20,6 +20,15 @@ namespace Fiar
         #endregion
 
         /// <summary>
+        /// Application error page - 400
+        /// </summary>
+        [Route(WebRoutes.Error400)]
+        public IActionResult AppError400()
+        {
+            return View();
+        }
+
+        /// <summary>
         /// Application error page - 401
         /// </summary>
         [Route(WebRoutes.Error401)]

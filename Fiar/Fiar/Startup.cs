@@ -14,7 +14,10 @@ using Microsoft.IdentityModel.Tokens;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net.WebSockets;
 using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace Fiar
 {
@@ -181,40 +184,74 @@ namespace Fiar
                 app.UseHsts();
             }
 
-            // Middleware
-            app.Use(async (ctx, next) =>
+            // Use web-sockets
+            var webSocketOptions = new WebSocketOptions()
             {
-                await next();
+                KeepAliveInterval = TimeSpan.FromSeconds(60),
+                ReceiveBufferSize = 1024 * 4
+            };
+            //webSocketOptions.AllowedOrigins.Add("https://client.com");
+            //webSocketOptions.AllowedOrigins.Add("https://www.client.com");
+            app.UseWebSockets(webSocketOptions);
+
+            // Middleware
+            app.Use(async (context, next) =>
+            {
+                // Check the context for the web-socket request...
+                if (context.Request.Path == "/ws")
+                {
+                    if (context.WebSockets.IsWebSocketRequest)
+                        using (WebSocket webSocket = await context.WebSockets.AcceptWebSocketAsync())
+                        {
+                            await HandleWebSocket(context, webSocket);
+                        }
+                    else
+                        context.Response.StatusCode = 400;
+                }
+                // Otherwise go in the standard way...
+                else
+                {
+                    await next();
+                }
 
                 // Handle online users cache
                 HandleOnlineUsersCache(httpContextAccessor, memoryCache);
 
                 // Define error page redirects
-                // 401
-                if (ctx.Response.StatusCode == 401 && !ctx.Response.HasStarted)
+                // 400
+                if (context.Response.StatusCode == 400 && !context.Response.HasStarted)
                 {
                     //Re-execute the request so the user gets the error page
-                    string originalPath = ctx.Request.Path.Value;
-                    ctx.Items["originalPath"] = originalPath;
-                    ctx.Request.Path = WebRoutes.Error401;
+                    string originalPath = context.Request.Path.Value;
+                    context.Items["originalPath"] = originalPath;
+                    context.Request.Path = WebRoutes.Error400;
+                    await next();
+                }
+                // 401
+                if (context.Response.StatusCode == 401 && !context.Response.HasStarted)
+                {
+                    //Re-execute the request so the user gets the error page
+                    string originalPath = context.Request.Path.Value;
+                    context.Items["originalPath"] = originalPath;
+                    context.Request.Path = WebRoutes.Error401;
                     await next();
                 }
                 // 403
-                else if (ctx.Response.StatusCode == 403 && !ctx.Response.HasStarted)
+                else if (context.Response.StatusCode == 403 && !context.Response.HasStarted)
                 {
                     //Re-execute the request so the user gets the error page
-                    string originalPath = ctx.Request.Path.Value;
-                    ctx.Items["originalPath"] = originalPath;
-                    ctx.Request.Path = WebRoutes.Error403;
+                    string originalPath = context.Request.Path.Value;
+                    context.Items["originalPath"] = originalPath;
+                    context.Request.Path = WebRoutes.Error403;
                     await next();
                 }
                 // 404
-                else if (ctx.Response.StatusCode == 404 && !ctx.Response.HasStarted)
+                else if (context.Response.StatusCode == 404 && !context.Response.HasStarted)
                 {
                     //Re-execute the request so the user gets the error page
-                    string originalPath = ctx.Request.Path.Value;
-                    ctx.Items["originalPath"] = originalPath;
-                    ctx.Request.Path = WebRoutes.Error404;
+                    string originalPath = context.Request.Path.Value;
+                    context.Items["originalPath"] = originalPath;
+                    context.Request.Path = WebRoutes.Error404;
                     await next();
                 }
             });
@@ -242,7 +279,23 @@ namespace Fiar
         }
 
         #region Helpers
-        
+
+        /// <summary>
+        /// WebSocket handler
+        /// </summary>
+        private async Task HandleWebSocket(HttpContext context, WebSocket webSocket)
+        {
+            var buffer = new byte[1024 * 4];
+            WebSocketReceiveResult result = await webSocket.ReceiveAsync(new ArraySegment<byte>(buffer), CancellationToken.None);
+            while (!result.CloseStatus.HasValue)
+            {
+                await webSocket.SendAsync(new ArraySegment<byte>(buffer, 0, result.Count), result.MessageType, result.EndOfMessage, CancellationToken.None);
+                
+                result = await webSocket.ReceiveAsync(new ArraySegment<byte>(buffer), CancellationToken.None);
+            }
+            await webSocket.CloseAsync(result.CloseStatus.Value, result.CloseStatusDescription, CancellationToken.None);
+        }
+
         /// <summary>
         /// Handle the cache on end request
         /// </summary>
