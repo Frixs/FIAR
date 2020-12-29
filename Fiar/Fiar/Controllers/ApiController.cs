@@ -744,15 +744,15 @@ namespace Fiar
                 // Return failed response
                 return errorResponse;
 
-            var item = mContext.UserRequests.FirstOrDefault(o => o.Id == model.Id && o.RelatedUserId.Equals(user.Id));
-            // Check the request exists
-            if (item != null)
+            var items = mContext.UserRequests.Where(o => o.UserId.Equals(model.OpponentUserId) && o.RelatedUserId.Equals(user.Id));
+            // Check the requests exist
+            if (items.Count() > 0)
             {
-                mContext.UserRequests.Remove(item);
+                mContext.UserRequests.RemoveRange(items);
                 // Try to check if there is the same request from the opponent and remove it optionally
-                var opponentItem = mContext.UserRequests.FirstOrDefault(o => o.UserId.Equals(user.Id) && o.RelatedUserId.Equals(model.OpponentUserId));
-                if (opponentItem != null)
-                    mContext.UserRequests.Remove(opponentItem);
+                var opponentItems = mContext.UserRequests.Where(o => o.UserId.Equals(user.Id) && o.RelatedUserId.Equals(model.OpponentUserId));
+                if (opponentItems.Count() > 0)
+                    mContext.UserRequests.RemoveRange(opponentItems);
 
                 // Save changes
                 mContext.SaveChanges();

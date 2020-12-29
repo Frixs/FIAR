@@ -3,7 +3,7 @@
 }
 
 <div class="text-center">
-    <h1 class="display-4">Lobby</h1>
+    <h1 class="display-4">LOBBY</h1>
 </div>
 <div id="lobby-index-container" class="container-fluid">
     <div class="row">
@@ -325,7 +325,7 @@
                         // user feedback here
                         if (data.errorMessage == null) {
                             window.alert = function () { };
-                            window.location.href = "/game";
+                            window.location.href = "@(WebRoutes.Game)";
                         } else {
                             alert(data.errorMessage);
                         }
@@ -355,7 +355,7 @@
                         // user feedback here
                         if (data.errorMessage == null) {
                             window.alert = function () { };
-                            window.location.href = "/game";
+                            window.location.href = "@(WebRoutes.Game)";
                         } else {
                             alert(data.errorMessage);
                         }

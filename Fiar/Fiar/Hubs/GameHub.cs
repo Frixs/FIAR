@@ -223,12 +223,12 @@ namespace Fiar
                 return;
             }
 
-            // Trim the message
-            message = message.Trim();
-
             // Ignore empty messages
             if (message.IsNullOrEmpty())
                 return;
+
+            // Trim the message
+            message = message.Trim();
 
             // Cal the send chat message task
             await ReceiveChatMessageCallAsync(game, user.Nickname, message);

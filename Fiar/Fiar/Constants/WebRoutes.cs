@@ -23,6 +23,16 @@
         /// <summary>
         /// The route to the web page
         /// </summary>
+        public const string Lobby = "/lobby";
+
+        /// <summary>
+        /// The route to the web page
+        /// </summary>
+        public const string Game = "/game";
+
+        /// <summary>
+        /// The route to the web page
+        /// </summary>
         public const string Error400 = "/400";
 
         /// <summary>

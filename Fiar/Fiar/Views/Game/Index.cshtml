@@ -3,34 +3,30 @@
 }
 
 <div class="text-center">
-    <h1 class="display-4">Game</h1>
+    <h1 class="display-4">GAME MATCH</h1>
+    <strong>Admin VS Heyho</strong>
 </div>
 <div id="game-index-container" class="container-fluid">
-    <div class="container">
-        <div class="row">&nbsp;</div>
-        <div class="row">
-            <div class="col-2">User</div>
-            <div class="col-4"><input type="text" id="userInput" /></div>
+    <div class="row">
+        <div class="col-xl-9">
+            <h2 class="text-center">Game Board</h2>
         </div>
-        <div class="row">
-            <div class="col-2">Message</div>
-            <div class="col-4"><input type="text" id="messageInput" /></div>
-        </div>
-        <div class="row">&nbsp;</div>
-        <div class="row">
-            <div class="col-6">
-                <input type="button" id="sendButton" value="Send Message" />
+        <div class="col-xl-3">
+            <h2 class="text-center">Chat</h2>
+            <div class="container">
+            <div class="row">
+                <div class="col-8">
+                    <input type="text" class="form-control" id="chat-message-input" maxlength="100" placeholder="Enter message" />
+                </div>
+                <div class="col-4">
+                    <input type="button" class="btn btn-light" id="chat-send-btn" value="Send Message" />
+                </div>
             </div>
-        </div>
-    </div>
-    <div class="row">
-        <div class="col-12">
-            <hr />
-        </div>
-    </div>
-    <div class="row">
-        <div class="col-6">
-            <ul id="messagesList"></ul>
+            </div>
+            <div class="col-12">
+                <ul id="chat-message-list">
+                </ul>
+            </div>
         </div>
     </div>
 </div>
@@ -39,31 +35,56 @@
     <script>
         "use strict";
 
-        var gameConnection = new signalR.HubConnectionBuilder().withUrl("/gamehub").build();
-        
-        //Disable send button until connection is established
-        document.getElementById("sendButton").disabled = true;
+        // Disable send button until connection is established
+        document.getElementById('chat-send-btn').disabled = true;
 
-        gameConnection.on("ReceiveChatMessage", function (user, message) {
-            var msg = message.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
-            var encodedMsg = user + " says " + msg;
-            var li = document.createElement("li");
-            li.textContent = encodedMsg;
-            document.getElementById("messagesList").appendChild(li);
-        });
-
-        gameConnection.start().then(function () {
-            document.getElementById("sendButton").disabled = false;
+        // Create a new connection
+        var connection = new signalR.HubConnectionBuilder().withUrl("/gamehub").build();
+        // Start the connection
+        connection.start().then(function () {
+            // Successfully connected
+            document.getElementById('chat-send-btn').disabled = false;
         }).catch(function (err) {
-            return console.error(err.toString());
+            // Failed to connect
+            console.error(err.toString());
+            window.alert = function () { };
+            window.location.href = "@(WebRoutes.Lobby)";
+            return;
+        });
+        // On disconnect
+        connection.onclose(function () {
+            window.alert = function () { };
+            window.location.href = "@(WebRoutes.Lobby)";
         });
 
-        document.getElementById("sendButton").addEventListener("click", function (event) {
-            var message = document.getElementById("messageInput").value;
-            gameConnection.invoke("SendChatMessage", message).catch(function (err) {
-                return console.error(err.toString());
+        $(document).ready(function () {
+            // ------------------------------
+            // Connection Events
+
+            // Receive chat message
+            connection.on("@nameof(IGameClient.ReceiveChatMessage)", function (nickname, message) {
+                let msg = message.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+                let date = new Date();
+
+                $('#chat-message-list').prepend(
+                    '<li>' + nickname + ' says <span class="time">(' + date.getHours() + ':' + date.getMinutes() + ')</span><span class="message">' + msg + '</span></li>'
+                );
+                if ($('#chat-message-list li').length > 10)
+                    $('#chat-message-list li').last().remove();
             });
-            event.preventDefault();
+
+            // ------------------------------
+            // Client Events
+
+            // Send chat message
+            $(document).on('click', '#chat-send-btn', function (event) {
+                let message = $('#chat-message-input').val();
+                connection.invoke("@nameof(GameHub.SendChatMessage)", message).catch(function (err) {
+                    return console.error(err.toString());
+                });
+                $('#chat-message-input').val("");
+                event.preventDefault();
+            });
         });
     </script>
 }
