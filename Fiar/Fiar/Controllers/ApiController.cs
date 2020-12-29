@@ -758,10 +758,8 @@ namespace Fiar
                 mContext.SaveChanges();
                 
                 // Add the game
-                bool result = await mGameRepository.AddItemAsync(new GameSession
+                bool result = await mGameRepository.AddItemAsync(new GameSession(model.OpponentUserId, user.Id)
                 {
-                    PlayerOneUserId = model.OpponentUserId,
-                    PlayerTwoUserId = user.Id,
                     PlayerOne = null,
                     PlayerTwo = null,
                     InProgress = false

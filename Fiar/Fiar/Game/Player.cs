@@ -1,4 +1,7 @@
-﻿namespace Fiar
+﻿using System;
+using System.Diagnostics;
+
+namespace Fiar
 {
     /// <summary>
     /// Player object representation
@@ -23,9 +26,37 @@
         public string ConnectionId { get; set; }
 
         /// <summary>
+        /// Player cell type representing the player
+        /// </summary>
+        public PlayerType Type { get; private set; }
+
+        /// <summary>
         /// Player color (hex)
         /// </summary>
-        public string Color { get; set; }
+        public string Color { get; private set; }
+
+        #endregion
+
+        #region Constructor
+
+        /// <summary>
+        /// Default constructor
+        /// </summary>
+        public Player(PlayerType playerType)
+        {
+            if (playerType == PlayerType.PlayerOne)
+            {
+                Type = PlayerType.PlayerOne;
+                Color = PlayerDefaultColor.One;
+            }
+            else if (playerType == PlayerType.PlayerTwo)
+            {
+                Type = PlayerType.PlayerTwo;
+                Color = PlayerDefaultColor.Two;
+            }
+            else
+                throw new ArgumentException("Invalid player board cell type!");
+        }
 
         #endregion
 
@@ -36,14 +67,13 @@
         /// </summary>
         /// <param name="user">The user</param>
         /// <returns>Player object</returns>
-        public static Player Convert(ApplicationUser user, string connectionId, string color)
+        public static Player Convert(ApplicationUser user, string connectionId, PlayerType playerType)
         {
-            return new Player
+            return new Player(playerType)
             {
                 Id = user.Id,
                 Nickname = user.Nickname,
-                ConnectionId = connectionId,
-                Color = color
+                ConnectionId = connectionId
             };
         }
 

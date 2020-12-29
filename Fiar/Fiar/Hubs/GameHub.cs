@@ -1,26 +1,27 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using Microsoft.AspNetCore.SignalR;
-using System.Threading.Tasks;
-using Ixs.DNA;
-using Microsoft.Extensions.Logging;
+﻿using Ixs.DNA;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.SignalR;
+using Microsoft.Extensions.Logging;
+using System;
+using System.Threading.Tasks;
 
 namespace Fiar
 {
+    /// <summary>
+    /// TODO
+    /// </summary>
     public interface IGameClient
     {
-        Task RenderBoard(string[][] board);
+        Task RenderBoard(GameBoardCellType[][] board);
         Task Color(string color);
-        Task Turn(string player);
+        Task Turn(PlayerType playerType);
         Task RollCall(Player player1, Player player2);
         Task Concede();
-        Task Victory(string player, string[][] board);
+        Task Victory(PlayerType playerType, GameBoardCellType[][] board);
     }
 
     /// <summary>
-    /// TODO
+    /// Game hub handles the SignalR connection for the entire gameplay
     /// </summary>
     public class GameHub : Hub<IGameClient>
     {
@@ -29,7 +30,7 @@ namespace Fiar
         /// <summary>
         /// Prefix for SignalR group name
         /// </summary>
-        private const string mGroupNamePrefix = "game-";
+        private const string mGameGroupNamePrefix = "game-";
 
         #endregion
 
@@ -61,7 +62,7 @@ namespace Fiar
         protected readonly IConfigBox mConfigBox;
 
         #endregion
-        
+
         #region Constructor
 
         /// <summary>
@@ -104,18 +105,18 @@ namespace Fiar
             // Assign players to the game
             if (user.Id.Equals(game.PlayerOneUserId))
             {
-                game.PlayerOne = Player.Convert(user, Context.ConnectionId, PlayerDefaultColor.One);
+                game.PlayerOne = Player.Convert(user, Context.ConnectionId, PlayerType.PlayerOne);
             }
             else
             {
-                game.PlayerTwo = Player.Convert(user, Context.ConnectionId, PlayerDefaultColor.Two);
+                game.PlayerTwo = Player.Convert(user, Context.ConnectionId, PlayerType.PlayerTwo);
             }
 
             // Once we have the last user (the only opponent one), flag up for starting the game
-            if (game.PlayerOne != null & game.PlayerTwo != null)
+            if (game.PlayerOne != null && game.PlayerTwo != null)
                 game.InProgress = true;
 
-            await Groups.AddToGroupAsync(Context.ConnectionId, mGroupNamePrefix + game.Id);
+            await Groups.AddToGroupAsync(Context.ConnectionId, mGameGroupNamePrefix + game.Id);
             await base.OnConnectedAsync();
 
             // Log it
@@ -143,8 +144,8 @@ namespace Fiar
                 return;
             }
 
-            //If game is complete (or any user disconnects) delete it
-            var game = await mGameRepository.GetItemAsync(o => o.PlayerOne.ConnectionId.Equals(Context.ConnectionId) || o.PlayerTwo.ConnectionId.Equals(Context.ConnectionId));
+            // If game is complete (or any user disconnects) delete it
+            var game = await GetGameAsync();
             if (game == null)
             {
                 mLogger.LogErrorSource($"Failed to find the game to disconnect from! ({user.UserName})");
@@ -152,8 +153,8 @@ namespace Fiar
                 return;
             }
 
-            await Groups.RemoveFromGroupAsync(Context.ConnectionId, mGroupNamePrefix + game.Id);
-            await Clients.Group(mGroupNamePrefix + game.Id).Concede();
+            await Groups.RemoveFromGroupAsync(Context.ConnectionId, mGameGroupNamePrefix + game.Id);
+            await Clients.Group(mGameGroupNamePrefix + game.Id).Concede();
 
             // Log it
             mLogger.LogDebugSource($"User {user.Nickname} disconnected from the game {game.Id}!");
@@ -165,6 +166,9 @@ namespace Fiar
 
         #endregion
 
+        /// <summary>
+        /// TODO
+        /// </summary>
         public async Task UpdateUser(string email, string name)
         {
             //var game = mGameRepository.Games.FirstOrDefault(g => g.HasPlayer(Context.ConnectionId));
@@ -177,104 +181,92 @@ namespace Fiar
             //}
         }
 
-        public async Task ColumnClick(int column)
+        /// <summary>
+        /// The game turn by clicking the cell
+        /// </summary>
+        /// <param name="row">The player's turn row</param>
+        /// <param name="column">The player's turn column</param>
+        public async Task CellClick(int row, int column)
         {
-            //var game = mGameRepository.Games.FirstOrDefault(g => g.HasPlayer(Context.ConnectionId));
-            //if (game is null)
-            //{
-            //    //Ignore click if no game exists
-            //    return;
-            //}
+            // Get user by the claims
+            var user = await mUserManager.GetUserAsync(Context.User);
+            // If user does not have authorization...
+            if (!await AuthorizeUserAsync(user, PolicyNames.PlayerLevel))
+            {
+                mLogger.LogDebugSource($"Unauthorized user to disconnect! ({user?.UserName ?? ""})");
+                Context.Abort();
+                return;
+            }
 
-            //if (Context.ConnectionId != game.CurrentPlayer.ConnectionId)
-            //{
-            //    //Ignore player clicking if it's not their turn
-            //    return;
-            //}
+            // Get the game to play on
+            var game = await GetGameAsync();
+            if (game == null)
+            {
+                mLogger.LogErrorSource($"Failed to find the game to play on! ({user.UserName})");
+                return;
+            }
 
-            ////ignore games that havent started
-            //if (!game.InProgress) return;
+            // If the user is not the player on turn
+            if (!Context.ConnectionId.Equals(game.CurrentPlayer.ConnectionId))
+                // Ignore player clicking if it's not their turn
+                return;
 
-            //var result = game.TryGetNextOpenRow(column);
+            // If the game is not started yet...
+            if (!game.InProgress)
+                // Ignore
+                return;
 
-            //// find first open spot in the column
-            //if (!result.exists)
-            //{
-            //    //ignore clicks on full columns
-            //    return;
-            //}
+            // Try to assign player turn into the board
+            var result = game.TryAssignPlayerToCell(row, column);
 
-            //await Clients.Group(game.Id.ToString()).RenderBoard(game.Board);
+            // If the assign failed...
+            if (!result)
+                // Ignore clicks on non-empty cells
+                return;
 
-            //// Check victory (only current player can win)
-            //if (game.CheckVictory(result.row, column))
-            //{
-            //    if (game.CurrentPlayer == game.Player1)
-            //    {
-            //        UpdateHighScore(game.Player1, game.Player2);
-            //    }
-            //    else
-            //    {
-            //        UpdateHighScore(game.Player2, game.Player1);
-            //    }
+            // Call for render the board to the players
+            await Clients.Group(mGameGroupNamePrefix + game.Id).RenderBoard(game.Board);
 
-            //    await Clients.Group(game.Id).Victory(game.CurrentPlayer.Color, game.Board);
-            //    mGameRepository.Games.Remove(game);
-            //    return;
-            //}
+            // Check victory conditions (only the current player can win)
+            if (game.CheckVictory(row, column))
+            {
+                // TODO
+                if (game.CurrentPlayer.Id.Equals(game.PlayerOne.Id))
+                    ; //UpdateHighScore(game.Player1, game.Player2);
+                else
+                    ; //UpdateHighScore(game.Player2, game.Player1);
 
-            //game.NextPlayer();
+                // Log it
+                mLogger.LogInformationSource($"User {game.CurrentPlayer.Nickname} won the game {game.Id}!");
 
-            //await Clients.Group(game.Id).Turn(game.CurrentPlayer.Color);
+                // Call the victory
+                await Clients.Group(mGameGroupNamePrefix + game.Id).Victory(game.CurrentPlayer.Type, game.Board);
+
+                // Log it
+                mLogger.LogDebugSource($"Game {game.Id} has ended!");
+
+                await mGameRepository.RemoveItemAsync(game);
+
+                return;
+            }
+
+            // Move to the next turn
+            game.MoveTurnPointerToNextPlayer();
+
+            // Call the next turn
+            await Clients.Group(mGameGroupNamePrefix + game.Id).Turn(game.CurrentPlayer.Type);
         }
-
-        private void UpdateHighScore(Player winner, Player loser)
-        {
-            //var winnerScore = mGameRepository.HighScores.FirstOrDefault(s => s.PlayerName == winner.Name);
-            //if (winnerScore == null)
-            //{
-            //    winnerScore = new HighScore { PlayerName = winner.Name };
-            //    mGameRepository.HighScores.Add(winnerScore);
-            //}
-
-            //winnerScore.Played++;
-            //winnerScore.Won++;
-            //winnerScore.Percentage = Convert.ToInt32((winnerScore.Won / Convert.ToSingle(winnerScore.Played)) * 100);
-
-            //var loserScore = mGameRepository.HighScores.FirstOrDefault(s => s.PlayerName == loser.Name);
-            //if (loserScore == null)
-            //{
-            //    loserScore = new HighScore { PlayerName = winner.Name };
-            //    mGameRepository.HighScores.Add(loserScore);
-            //}
-
-            //loserScore.Played++;
-            //loserScore.Percentage = Convert.ToInt32((loserScore.Won / Convert.ToSingle(loserScore.Played)) * 100);
-        }
-
-        private async void CoinToss(Game game)
-        {
-            //var result = _random.Next(2);
-            //if (result == 1)
-            //{
-            //    game.Player1.Color = Game.RedCell;
-            //    game.Player2.Color = Game.YellowCell;
-            //    game.CurrentPlayer = game.Player1;
-            //}
-            //else
-            //{
-            //    game.Player1.Color = Game.YellowCell;
-            //    game.Player2.Color = Game.RedCell;
-            //    game.CurrentPlayer = game.Player2;
-            //}
-
-            //await Clients.Client(game.Player1.ConnectionId).Color(game.Player1.Color);
-            //await Clients.Client(game.Player2.ConnectionId).Color(game.Player2.Color);
-            //await Clients.Group(game.Id).Turn(Game.RedCell);
-        }
-
 
         #region Private Helpers
+
+        /// <summary>
+        /// Gets the game based on authenticated user context
+        /// </summary>
+        /// <returns>The game session or null on failure</returns>
+        private async Task<GameSession> GetGameAsync()
+        {
+            return await mGameRepository.GetItemAsync(o => o.HasPlayer(Context.ConnectionId));
+        }
 
         /// <summary>
         /// Authorize user by policy
