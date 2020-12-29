@@ -36,6 +36,20 @@ namespace Fiar
         [ValidateIgnore]
         public GameDataModel Game { get; set; }
 
+        /// <summary>
+        /// Foreign Key for <see cref="ApplicationUser"/>
+        /// </summary>
+        [ValidateIgnore]
+        public string UserId { get; set; }
+
+        /// <summary>
+        /// Reference to ONE user // Fluent API
+        /// </summary>
+        [System.Text.Json.Serialization.JsonIgnore]
+        [Newtonsoft.Json.JsonIgnore]
+        [ValidateIgnore]
+        public ApplicationUser User { get; set; }
+
         #endregion
 
         #region Properties
@@ -45,12 +59,6 @@ namespace Fiar
         /// </summary>
         [ValidateIgnore]
         public PlayerType Type { get; set; }
-
-        /// <summary>
-        /// Indicates if the participant is connected to the game
-        /// </summary>
-        [ValidateIgnore]
-        public bool IsConnected { get; set; }
 
         #endregion
     }

@@ -42,12 +42,12 @@ namespace Fiar
         /// <summary>
         /// Injection - <inheritdoc cref="ILogger"/>
         /// </summary>
-        private readonly ILogger mLogger;
+        protected readonly ILogger mLogger;
 
         /// <summary>
         /// Injection - <inheritdoc cref="IConfigBox"/>
         /// </summary>
-        private readonly IConfigBox mConfigBox;
+        protected readonly IConfigBox mConfigBox;
 
         #endregion
 

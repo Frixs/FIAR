@@ -20,6 +20,9 @@ namespace Fiar
             // Bind email sender
             services.AddTransient<IEmailSender, BaseEmailSender>();
 
+            // Bind game repository
+            services.AddSingleton<IRepository<GameSession>, GameRepository>();
+
             // Return collection for chaining
             return services;
         }

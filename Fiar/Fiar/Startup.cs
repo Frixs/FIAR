@@ -140,6 +140,9 @@ namespace Fiar
             // Add caching
             services.AddMemoryCache();
 
+            // Add SignalR
+            services.AddSignalR();
+
             var mvc = services.AddMvc()
                 // State we are a minimum compatability of...
                 // Excplanation at https://youtu.be/fsIkYMpBO6s?t=578
@@ -184,35 +187,10 @@ namespace Fiar
                 app.UseHsts();
             }
 
-            // Use web-sockets
-            var webSocketOptions = new WebSocketOptions()
-            {
-                KeepAliveInterval = TimeSpan.FromSeconds(60),
-                ReceiveBufferSize = 1024 * 4
-            };
-            //webSocketOptions.AllowedOrigins.Add("https://client.com");
-            //webSocketOptions.AllowedOrigins.Add("https://www.client.com");
-            app.UseWebSockets(webSocketOptions);
-
             // Middleware
             app.Use(async (context, next) =>
             {
-                // Check the context for the web-socket request...
-                if (context.Request.Path == "/ws")
-                {
-                    if (context.WebSockets.IsWebSocketRequest)
-                        using (WebSocket webSocket = await context.WebSockets.AcceptWebSocketAsync())
-                        {
-                            await HandleWebSocket(context, webSocket);
-                        }
-                    else
-                        context.Response.StatusCode = 400;
-                }
-                // Otherwise go in the standard way...
-                else
-                {
-                    await next();
-                }
+                await next();
 
                 // Handle online users cache
                 HandleOnlineUsersCache(httpContextAccessor, memoryCache);
@@ -272,29 +250,19 @@ namespace Fiar
                 endpoints.MapControllerRoute(
                     name: "default",
                     pattern: "{controller=Home}/{action=Index}/{id?}");
+                //endpoints.MapHub<GameHub>("gamehub");
+                endpoints.MapHub<GameHub>("gamehub");
+                endpoints.MapHub<ChatHub>("chathub");
             });
 
             // Make sure we have the database.
             serviceProvider.GetService<ApplicationDbContext>().Database.EnsureCreated();
+            // Remove all games that has no result (not finished one)
+            serviceProvider.GetService<ApplicationDbContext>().Games.RemoveRange(serviceProvider.GetService<ApplicationDbContext>().Games.Where(o => o.Result == GameResult.None));
+            serviceProvider.GetService<ApplicationDbContext>().SaveChanges();
         }
 
         #region Helpers
-
-        /// <summary>
-        /// WebSocket handler
-        /// </summary>
-        private async Task HandleWebSocket(HttpContext context, WebSocket webSocket)
-        {
-            var buffer = new byte[1024 * 4];
-            WebSocketReceiveResult result = await webSocket.ReceiveAsync(new ArraySegment<byte>(buffer), CancellationToken.None);
-            while (!result.CloseStatus.HasValue)
-            {
-                await webSocket.SendAsync(new ArraySegment<byte>(buffer, 0, result.Count), result.MessageType, result.EndOfMessage, CancellationToken.None);
-                
-                result = await webSocket.ReceiveAsync(new ArraySegment<byte>(buffer), CancellationToken.None);
-            }
-            await webSocket.CloseAsync(result.CloseStatus.Value, result.CloseStatusDescription, CancellationToken.None);
-        }
 
         /// <summary>
         /// Handle the cache on end request

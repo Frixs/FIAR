@@ -61,6 +61,15 @@ namespace Fiar.Localization {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Failed to start a new game!.
+        /// </summary>
+        internal static string ApiController_AddGameByRequest_FailedErrorMsg {
+            get {
+                return ResourceManager.GetString("ApiController_AddGameByRequest_FailedErrorMsg", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Failed to add a new friend.
         /// </summary>
         internal static string ApiController_AddUserFriendByRequest_FailedErrorMsg {

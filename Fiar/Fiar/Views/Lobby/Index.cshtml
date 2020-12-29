@@ -141,7 +141,7 @@
                             '<tr class="--' + (data.response.requestModels[i].user.isOnline ? 'online' : 'offline') + '" data-rid="' + data.response.requestModels[i].id + '" data-rtype="' + data.response.requestModels[i].type + '" data-uid="' + data.response.requestModels[i].user.id + '">'
                             + '<td>' + data.response.requestModels[i].user.nickname + '</td>'
                             + '<td class="status-indicator"><i class="fas fa-circle"></i></td>'
-                            + '<td><b>' + (data.response.requestModels[i].type == @((int)UserRequestType.Challange) ? 'CHALLANGE' : 'FRIEND') + '</b></td>'
+                            + '<td><b>' + (data.response.requestModels[i].type == @((int)UserRequestType.Friend) ? 'FRIEND' : (data.response.requestModels[i].type == @((int)UserRequestType.Challange) ? 'CHALLANGE' : 'JOIN MATCH')) + '</b></td>'
                             + '<td><button class="btn btn-success lobby-table-btn accept-request-btn">ACCEPT</button></td>'
                             + '<td><button class="btn btn-danger lobby-table-btn decline-request-btn">DECLINE</button></td>'
                             + '</tr>'
@@ -310,8 +310,68 @@
         // FUNCTION
         // Accept user request task
         function acceptRequestFunction(rid, rtype, uid) {
+            console.log("x");
             if (rtype == @((int)UserRequestType.Challange)) {
-                console.log("TODO");
+                console.log("y");
+                // AJAX POST
+                $.ajax({
+                    url: "@ApiRoutes.AddGameByRequest",
+                    type: "POST",
+                    dataType: "json",
+                    contentType: 'application/json;charset=utf-8',
+                    data: JSON.stringify({ Id: rid, OpponentUserId: uid }),
+                    // Success
+                    success: function (data) {
+                        // user feedback here
+                        if (data.errorMessage == null) {
+                            window.alert = function () { };
+                            window.location.href = "/game";
+                        } else {
+                            alert(data.errorMessage);
+                        }
+                    },
+                    // Error
+                    error: function (data) {
+                        // If unauthorized error...
+                        if (data.status == 401) {
+                            window.alert = function () { };
+                            window.location.href = "@(WebRoutes.Login)";
+                        } else {
+                            window.alert = function () { };
+                            window.location.href = "@(WebRoutes.Error500)";
+                        }
+                    }
+                });
+            } else if (rtype == @((int)UserRequestType.AcceptChallange)) {
+                // AJAX POST
+                $.ajax({
+                    url: "@ApiRoutes.DeleteUserRequest",
+                    type: "POST",
+                    dataType: "json",
+                    contentType: 'application/json;charset=utf-8',
+                    data: JSON.stringify({ Id: rid }),
+                    // Success
+                    success: function (data) {
+                        // user feedback here
+                        if (data.errorMessage == null) {
+                            window.alert = function () { };
+                            window.location.href = "/game";
+                        } else {
+                            alert(data.errorMessage);
+                        }
+                    },
+                    // Error
+                    error: function (data) {
+                        // If unauthorized error...
+                        if (data.status == 401) {
+                            window.alert = function () { };
+                            window.location.href = "@(WebRoutes.Login)";
+                        } else {
+                            window.alert = function () { };
+                            window.location.href = "@(WebRoutes.Error500)";
+                        }
+                    }
+                });
             } else {
                 // AJAX POST
                 $.ajax({

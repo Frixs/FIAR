@@ -64,5 +64,10 @@
         /// The route to the API method
         /// </summary>
         public const string DeleteUserFriend = "/api/user/friend/delete";
+
+        /// <summary>
+        /// The route to the API method
+        /// </summary>
+        public const string AddGameByRequest = "/api/game/add/request";
     }
 }

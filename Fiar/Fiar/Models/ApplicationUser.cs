@@ -42,6 +42,14 @@ namespace Fiar
         /// </summary>
         public ICollection<UserRequestDataModel> RelatedRequests { get; set; }
 
+        /// <summary>
+        /// Reference to MANY participated games // Fluent API
+        /// ---
+        /// E.g. You can use this list to put as many moves into this list 
+        /// while creation a new game to create new moves associated to this game at the same time during commit
+        /// </summary>
+        public ICollection<GameParticipantDataModel> ParticipatedGames { get; set; }
+
         #endregion
 
         #region Public Properties

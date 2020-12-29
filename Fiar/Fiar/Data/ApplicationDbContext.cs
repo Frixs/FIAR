@@ -156,6 +156,12 @@ namespace Fiar
                 .WithMany(o => o.Participants)
                 .HasForeignKey(o => o.GameId)
                 .OnDelete(DeleteBehavior.Cascade);
+            // Set Foreign Key
+            modelBuilder.Entity<GameParticipantDataModel>()
+                .HasOne(o => o.User)
+                .WithMany(o => o.ParticipatedGames)
+                .HasForeignKey(o => o.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
             // Set up indexed/unique columns
             modelBuilder.Entity<GameParticipantDataModel>().HasIndex(o => o.Type);
 

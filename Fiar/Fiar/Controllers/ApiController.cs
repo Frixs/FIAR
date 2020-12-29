@@ -52,12 +52,17 @@ namespace Fiar
         /// <summary>
         /// Injection - <inheritdoc cref="ILogger"/>
         /// </summary>
-        private readonly ILogger mLogger;
+        protected readonly ILogger mLogger;
 
         /// <summary>
         /// Injection - <inheritdoc cref="IConfigBox"/>
         /// </summary>
-        private readonly IConfigBox mConfigBox;
+        protected readonly IConfigBox mConfigBox;
+
+        /// <summary>
+        /// Injection - <inheritdoc cref="IRepository<GameSession>"/>
+        /// </summary>
+        protected readonly IRepository<GameSession> mGameRepository;
 
         #endregion
 
@@ -70,7 +75,7 @@ namespace Fiar
         /// <param name="userManager">The Identity user manager</param>
         /// <param name="signInManager">The Identity sign in manager</param>
         /// <param name="roleManager">The Identity role manager</param>
-        public ApiController(ApplicationDbContext context, UserManager<ApplicationUser> userManager, SignInManager<ApplicationUser> signInManager, RoleManager<IdentityRole> roleManager, IMemoryCache memoryCache, IConfigBox configBox)
+        public ApiController(ApplicationDbContext context, UserManager<ApplicationUser> userManager, SignInManager<ApplicationUser> signInManager, RoleManager<IdentityRole> roleManager, IMemoryCache memoryCache, IConfigBox configBox, IRepository<GameSession> gameRepository)
         {
             mContext = context;
             mUserManager = userManager;
@@ -78,6 +83,7 @@ namespace Fiar
             mRoleManager = roleManager;
             mMemoryCache = memoryCache;
             mConfigBox = configBox ?? throw new ArgumentNullException(nameof(configBox));
+            mGameRepository = gameRepository ?? throw new ArgumentNullException(nameof(gameRepository));
             mLogger = FrameworkDI.Logger ?? throw new ArgumentNullException(nameof(mLogger));
         }
 
@@ -707,6 +713,80 @@ namespace Fiar
 
             // Failed
             return new ApiResponse { ErrorMessage = Localization.Resource.ApiController_DeleteUserFriend_FailedErrorMsg };
+        }
+
+        #endregion
+
+        #region Game
+
+        /// <summary>
+        /// Adds a new game friend to the currently authenticated user
+        /// </summary>
+        [HttpPost]
+        [Route(ApiRoutes.AddGameByRequest)]
+        public async Task<ApiResponse> AddGameByRequestAsync([FromBody] Add_GameByRequestApiModel model)
+        {
+            #region Get/Check User
+
+            // Get user by the claims
+            var user = await mUserManager.GetUserAsync(HttpContext.User);
+            // If user does not have authorization...
+            if (!await AuthorizeUserAsync(user, PolicyNames.PlayerLevel))
+                // Return user auth error response
+                return GetAuthorizationErrorApiResponse(Localization.Resource.AuthError_UserNotFound);
+
+            #endregion
+
+            // The error message to user
+            var errorResponse = new ApiResponse { ErrorMessage = Localization.Resource.ApiController_ValidationErrorMsg };
+            // If we have no model...
+            if (model == null)
+                // Return failed response
+                return errorResponse;
+
+            var item = mContext.UserRequests.FirstOrDefault(o => o.Id == model.Id && o.RelatedUserId.Equals(user.Id));
+            // Check the request exists
+            if (item != null)
+            {
+                mContext.UserRequests.Remove(item);
+                // Try to check if there is the same request from the opponent and remove it optionally
+                var opponentItem = mContext.UserRequests.FirstOrDefault(o => o.UserId.Equals(user.Id) && o.RelatedUserId.Equals(model.OpponentUserId));
+                if (opponentItem != null)
+                    mContext.UserRequests.Remove(opponentItem);
+
+                // Save changes
+                mContext.SaveChanges();
+                
+                // Add the game
+                bool result = await mGameRepository.AddItemAsync(new GameSession
+                {
+                    PlayerOneUserId = model.OpponentUserId,
+                    PlayerTwoUserId = user.Id,
+                    PlayerOne = null,
+                    PlayerTwo = null,
+                    InProgress = false
+                });
+                if (result)
+                {
+                    // Create challange accept request to let opponent join the game
+                    mContext.UserRequests.Add(new UserRequestDataModel
+                    { 
+                        UserId = user.Id,
+                        RelatedUserId = model.OpponentUserId,
+                        Type = UserRequestType.AcceptChallange,
+                        CreatedAt = DateTime.Now
+                    });
+
+                    // Save changes
+                    mContext.SaveChanges();
+
+                    // Return successful response
+                    return new ApiResponse();
+                }
+            }
+
+            // Failed
+            return new ApiResponse { ErrorMessage = Localization.Resource.ApiController_AddGameByRequest_FailedErrorMsg };
         }
 
         #endregion
