@@ -1,6 +1,7 @@
 ﻿@import "../Utils/module";
 
 #game-index-container {
+
     #chat-message-list {
         margin-top: 10px;
 
@@ -19,6 +20,53 @@
                 line-height: 14px;
                 display: block;
                 margin-left: 10px;
+            }
+        }
+    }
+
+    .gameplay-container {
+        position: relative;
+        overflow-x: auto;
+        overflow-y: auto;
+        width: 100%;
+        height: calc(75vh - 1px);
+
+        #gameplay-table {
+            height: auto;
+            border: 3px solid black;
+            border-collapse: unset;
+            border-spacing: 2px;
+            //table-layout: fixed;
+            margin: auto;
+
+            tr {
+                border: 1px solid black;
+                padding: 0;
+
+                td {
+                    overflow: hidden;
+                    border: 1px solid black;
+                    padding: 0;
+                    background-color: $color-background-main;
+
+                    &.empty {
+                        cursor: pointer;
+
+                        &:hover {
+                            background-color: $color-contour-light;
+                        }
+                    }
+
+                    & > div {
+                        font-size: 14px;
+                        text-align: center;
+                        line-height: 35px;
+                        min-width: 35px;
+                        max-width: 35px;
+                        min-height: 35px;
+                        max-height: 35px;
+                    }
+                }
             }
         }
     }

@@ -1,1 +1,21 @@
-﻿
+﻿@import "../Utils/module";
+
+html, body {
+    height: 100%;
+    font-family: 'MPLUSRounded1c_Regular';
+    color: $color-chameleon-dark;
+    background-color: $color-background-main;
+    overflow-x: auto;
+}
+
+body {
+    min-height: 100vh;
+}
+
+main {
+    min-height: calc(100vh - 143px); // - footer - mmenu
+}
+
+.sticky-footer {
+    height: 70px;
+}

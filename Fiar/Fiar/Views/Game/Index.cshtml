@@ -10,6 +10,12 @@
     <div class="row">
         <div class="col-xl-9">
             <h2 class="text-center">Game Board</h2>
+            <div class="gameplay-container">
+                <table id="gameplay-table">
+                    <tbody>
+                    </tbody>
+                </table>
+            </div>
         </div>
         <div class="col-xl-3">
             <h2 class="text-center">Chat</h2>
@@ -54,7 +60,8 @@
         // On disconnect
         connection.onclose(function () {
             window.alert = function () { };
-            window.location.href = "@(WebRoutes.Lobby)";
+            // TODO - uncomment
+            //window.location.href = "@(WebRoutes.Lobby)";
         });
 
         $(document).ready(function () {
@@ -85,6 +92,21 @@
                 $('#chat-message-input').val("");
                 event.preventDefault();
             });
+
+
+
+            let toAppend = "";
+            for (let y = 0; y < 15; ++y) {
+                toAppend += '<tr>';
+                for (let x = 0; x < 15; ++x) {
+                    toAppend += '<td class="empty"><div></div></td>';
+                }
+                toAppend += '</tr>';
+            }
+            $('#gameplay-table tbody').append(toAppend);
+            //<td><div><i class="fas fa-times"></i></div></td>
+            //<td><div><i class="far fa-circle"></i></div></td>
+            //<td class="empty"><div></div></td>
         });
     </script>
 }
