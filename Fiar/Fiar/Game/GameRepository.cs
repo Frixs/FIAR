@@ -74,7 +74,7 @@ namespace Fiar
                     // Get DB context
                     var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
 
-                    if (!dbContext.GameParticipants.Any(o => o.Game.Result == GameResult.None && o.UserId.Equals(item.PlayerOneUserId) || o.UserId.Equals(item.PlayerTwoUserId)))
+                    if (!dbContext.GameParticipants.Any(o => o.Game.Result == GameResult.None && (o.UserId.Equals(item.PlayerOneUserId) || o.UserId.Equals(item.PlayerTwoUserId))))
                     {
                         // Create game data model
                         var participants = new List<GameParticipantDataModel>();

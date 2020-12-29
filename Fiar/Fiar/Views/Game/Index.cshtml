@@ -4,9 +4,9 @@
 
 <div class="text-center">
     <h1 class="display-4">GAME MATCH</h1>
-    <strong>Admin VS Heyho</strong>
 </div>
 <div id="game-index-container" class="container-fluid">
+    <strong id="player-label"><span class="p1">...</span> -VS- <span class="p2">...</span></strong>
     <div class="row">
         <div class="col-xl-9">
             <h2 class="text-center">Game Board</h2>
@@ -20,14 +20,14 @@
         <div class="col-xl-3">
             <h2 class="text-center">Chat</h2>
             <div class="container">
-            <div class="row">
-                <div class="col-8">
-                    <input type="text" class="form-control" id="chat-message-input" maxlength="100" placeholder="Enter message" />
+                <div class="row">
+                    <div class="col-8">
+                        <input type="text" class="form-control" id="chat-message-input" maxlength="100" placeholder="Enter message" />
+                    </div>
+                    <div class="col-4">
+                        <input type="button" class="btn btn-light" id="chat-send-btn" value="Send Message" />
+                    </div>
                 </div>
-                <div class="col-4">
-                    <input type="button" class="btn btn-light" id="chat-send-btn" value="Send Message" />
-                </div>
-            </div>
             </div>
             <div class="col-12">
                 <ul id="chat-message-list">
@@ -68,6 +68,53 @@
             // ------------------------------
             // Connection Events
 
+            // Render game board
+            connection.on("@nameof(IGameClient.RenderBoard)", function (board) {
+                let toAppend = "";
+                for (let y = 0; y < board.length; ++y) {
+                    toAppend += '<tr>';
+                    for (let x = 0; x < board[0].length; ++x) {
+                        if (board[y][x] == @((int)GameBoardCellType.PlayerOne)) {
+                            toAppend += '<td class="p1" data-row="' + y + '" data-column="' + x + '"><div><i class="fas fa-times"></i></div></td>';
+                        } else if (board[y][x] == @((int)GameBoardCellType.PlayerTwo)) {
+                            toAppend += '<td class="p2" data-row="' + y + '" data-column="' + x + '"><div><i class="far fa-circle"></i></div></td>';
+                        } else if (board[y][x] == @((int)GameBoardCellType.PlayerOneHighlighted)) {
+                            toAppend += '<td class="p1h" data-row="' + y + '" data-column="' + x + '"><div><i class="fas fa-times"></i></div></td>';
+                        } else if (board[y][x] == @((int)GameBoardCellType.PlayerTwoHighlighted)) {
+                            toAppend += '<td class="p2h" data-row="' + y + '" data-column="' + x + '"><div><i class="far fa-circle"></i></div></td>';
+                        } else {
+                            toAppend += '<td class="empty" data-row="' + y + '" data-column="' + x + '"><div></div></td>';
+                        }
+                    }
+                    toAppend += '</tr>';
+                }
+                $('#gameplay-table tbody').empty();
+                $('#gameplay-table tbody').append(toAppend);
+            });
+
+            // Update players
+            connection.on("@nameof(IGameClient.UpdatePlayers)", function (playerOneObj, playerTwoObj) {
+                if (playerOneObj != null)
+                    $('#player-label .p1').html(playerOneObj.nickname);
+                if (playerTwoObj != null)
+                    $('#player-label .p2').html(playerTwoObj.nickname);
+            });
+
+            // Next turn
+            connection.on("@nameof(IGameClient.Turn)", function (playerType) {
+
+            });
+
+            // On victory
+            connection.on("@nameof(IGameClient.Victory)", function (playerType) {
+
+            });
+
+            // On concede
+            connection.on("@nameof(IGameClient.Concede)", function () {
+
+            });
+
             // Receive chat message
             connection.on("@nameof(IGameClient.ReceiveChatMessage)", function (nickname, message) {
                 let msg = message.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
@@ -80,30 +127,6 @@
                     $('#chat-message-list li').last().remove();
             });
 
-            // Render game board
-            connection.on("@nameof(IGameClient.RenderBoard)", function (board) {
-                let toAppend = "";
-                for (let y = 0; y < board.length; ++y) {
-                    toAppend += '<tr>';
-                    for (let x = 0; x < board[0].length; ++x) {
-                        if (board[y][x] == @((int)GameBoardCellType.PlayerOne)) {
-                            toAppend += '<td class="p1"><div><i class="fas fa-times"></i></div></td>';
-                        } else if (board[y][x] == @((int)GameBoardCellType.PlayerTwo)) {
-                            toAppend += '<td class="p2"><div><i class="far fa-circle"></i></div></td>';
-                        } else if (board[y][x] == @((int)GameBoardCellType.PlayerOneHighlighted)) {
-                            toAppend += '<td class="p2h"><div><i class="far fa-circle"></i></div></td>';
-                        } else if (board[y][x] == @((int)GameBoardCellType.PlayerTwoHighlighted)) {
-                            toAppend += '<td class="p2h"><div><i class="fas fa-times"></i></div></td>';
-                        } else {
-                            toAppend += '<td class="empty"><div></div></td>';
-                        }
-                    }
-                    toAppend += '</tr>';
-                }
-                $('#gameplay-table tbody').empty();
-                $('#gameplay-table tbody').append(toAppend);
-            });
-
             // ------------------------------
             // Client Events
 
@@ -114,6 +137,16 @@
                     return console.error(err.toString());
                 });
                 $('#chat-message-input').val("");
+                event.preventDefault();
+            });
+
+            // On cell click
+            $(document).on('click', '#gameplay-table td', function (event) {
+                let row = $(this).attr('data-row');
+                let column = $(this).attr('data-column');
+                connection.invoke("@nameof(GameHub.CellClick)", parseInt(row), parseInt(column)).catch(function (err) {
+                    return console.error(err.toString());
+                });
                 event.preventDefault();
             });
         });

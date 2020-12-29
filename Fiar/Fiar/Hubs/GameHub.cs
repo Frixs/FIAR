@@ -135,12 +135,10 @@ namespace Fiar
             if (user.Id.Equals(game.PlayerOneUserId))
             {
                 game.PlayerOne = Player.Convert(user, Context.ConnectionId, PlayerType.PlayerOne);
-                await UpdatePlayersCallAsync(game);
             }
             else
             {
                 game.PlayerTwo = Player.Convert(user, Context.ConnectionId, PlayerType.PlayerTwo);
-                await UpdatePlayersCallAsync(game);
             }
 
             // Once we have the last user (the only opponent one), flag up for starting the game
@@ -152,6 +150,9 @@ namespace Fiar
 
             // Log it
             mLogger.LogDebugSource($"User {user.Nickname} connected to the game {game.Id}!");
+
+            // Update players
+            await UpdatePlayersCallAsync(game);
 
             if (game.InProgress)
             {
@@ -259,6 +260,11 @@ namespace Fiar
                 return;
             }
 
+            // If the current player is not set yet...
+            if (game.CurrentPlayer == null)
+                // Set it then
+                game.MoveTurnPointerToNextPlayer();
+
             // If the user is not the player on turn
             if (!Context.ConnectionId.Equals(game.CurrentPlayer.ConnectionId))
                 // Ignore player clicking if it's not their turn
@@ -322,8 +328,8 @@ namespace Fiar
             mContext.GameMoves.Add(new GameMoveDataModel
             {
                 GameId = dbGame.Id,
-                PosX = row,
-                PosY = column,
+                PosX = column,
+                PosY = row,
                 Type = game.CurrentPlayer.Type
             });
             mContext.SaveChanges();

@@ -168,10 +168,18 @@
         /// </summary>
         public void MoveTurnPointerToNextPlayer()
         {
-            if (CurrentPlayer.Id.Equals(PlayerOne.Id))
-                CurrentPlayer = PlayerTwo;
+            if (CurrentPlayer != null)
+            {
+
+                if (CurrentPlayer.Id.Equals(PlayerOne.Id))
+                    CurrentPlayer = PlayerTwo;
+                else
+                    CurrentPlayer = PlayerOne;
+            }
             else
-                CurrentPlayer = PlayerOne;
+            {
+                CurrentPlayer = PlayerTwo;
+            }
         }
 
         #endregion
@@ -185,12 +193,12 @@
         {
             Board = new GameBoardCellType[NumberOfRows][];
 
-            for (int x = 0; x < NumberOfRows; ++x)
+            for (int y = 0; y < NumberOfRows; ++y)
             {
-                Board[x] = new GameBoardCellType[NumberOfColumns];
-                for (int y = 0; y < NumberOfColumns; ++y)
+                Board[y] = new GameBoardCellType[NumberOfColumns];
+                for (int x = 0; x < NumberOfColumns; ++x)
                 {
-                    Board[x][y] = GameBoardCellType.Empty;
+                    Board[y][x] = GameBoardCellType.Empty;
                 }
             }
         }
@@ -233,7 +241,7 @@
             if (endColumn - startColumn >= ChainLengthToWin - 1)
             {
                 for (var k = 0; k < ChainLengthToWin; ++k)
-                    Board[row][startColumn + k] = player + 2; // 2 players
+                    Board[row][startColumn + k] = (GameBoardCellType)((int)player + 2); // 2 players
 
                 return true;
             }
@@ -279,7 +287,7 @@
             if (endRow - startRow >= ChainLengthToWin - 1)
             {
                 for (var k = 0; k < ChainLengthToWin; ++k)
-                    Board[startRow + k][column] = player + 2; // 2 players
+                    Board[startRow + k][column] = (GameBoardCellType)((int)player + 2); // 2 players
 
                 return true;
             }
@@ -333,7 +341,7 @@
             if (endColumn - startColumn >= ChainLengthToWin - 1)
             {
                 for (var k = 0; k < ChainLengthToWin; ++k)
-                    Board[startRow + k][startColumn + k] = player + 2; // 2 players
+                    Board[startRow + k][startColumn + k] = (GameBoardCellType)((int)player + 2); // 2 players
 
                 return true;
             }
@@ -358,7 +366,7 @@
             }
 
             // Count to top-right
-            for (var k = 1; k < 4; ++k)
+            for (var k = 1; k < ChainLengthToWin; ++k)
             {
                 var rowToCheck = row - k;
                 var columnToCheck = column + k;
@@ -374,7 +382,7 @@
             if (endColumn - startColumn >= ChainLengthToWin - 1)
             {
                 for (var k = 0; k < ChainLengthToWin; ++k)
-                    Board[startRow - k][startColumn + k] = player + 2; // 2 players
+                    Board[startRow - k][startColumn + k] = (GameBoardCellType)((int)player + 2); // 2 players
 
                 return true;
             }
