@@ -269,6 +269,11 @@ namespace Fiar
                 // Ignore
                 return;
 
+            // Check for invalid range...
+            if (row < 0 || row >= game.Board.Length || column < 0 || column >= game.Board[0].Length)
+                // Ignore
+                return;
+
             // Try to assign player turn into the board
             var result = game.TryAssignPlayerToCell(row, column);
 

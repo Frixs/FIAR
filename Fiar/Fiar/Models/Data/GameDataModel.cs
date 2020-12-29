@@ -52,18 +52,6 @@ namespace Fiar
         [ValidateIgnore]
         public GameResult Result { get; set; }
 
-        /// <summary>
-        /// The datetime of the game start
-        /// </summary>
-        [ValidateIgnore]
-        public DateTime StartedAt { get; set; }
-
-        /// <summary>
-        /// The datetime of the game finish
-        /// </summary>
-        [ValidateIgnore]
-        public DateTime FinishedAt { get; set; }
-
         #endregion
     }
 }

@@ -57,6 +57,24 @@
                         }
                     }
 
+                    &.p1 {
+                        color: blue;
+                    }
+
+                    &.p2 {
+                        color: red;
+                    }
+
+                    &.p1h {
+                        color: blue;
+                        background-color: $color-contour-light;
+                    }
+
+                    &.p2h {
+                        color: red;
+                        background-color: $color-contour-light;
+                    }
+
                     & > div {
                         font-size: 14px;
                         text-align: center;

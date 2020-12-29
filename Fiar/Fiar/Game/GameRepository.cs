@@ -165,6 +165,16 @@ namespace Fiar
                         {
                             result = true;
                         }
+
+                        // Possibly rmeove requests if any...
+                        var dbP1 = dbContext.GameParticipants.FirstOrDefault(o => o.GameId == game.Id && o.Type == PlayerType.PlayerOne);
+                        var dbP2 = dbContext.GameParticipants.FirstOrDefault(o => o.GameId == game.Id && o.Type == PlayerType.PlayerTwo);
+                        if (dbP1 != null && dbP2 != null)
+                        {
+                            var requests = dbContext.UserRequests.Where(o => o.Type == UserRequestType.AcceptChallange && (o.UserId.Equals(dbP1.Id) || o.UserId.Equals(dbP2.Id))).ToList();
+                            dbContext.RemoveRange(requests);
+                            dbContext.SaveChanges();
+                        }
                     }
                 }
 

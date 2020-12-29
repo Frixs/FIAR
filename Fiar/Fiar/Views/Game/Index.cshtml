@@ -80,6 +80,30 @@
                     $('#chat-message-list li').last().remove();
             });
 
+            // Render game board
+            connection.on("@nameof(IGameClient.RenderBoard)", function (board) {
+                let toAppend = "";
+                for (let y = 0; y < board.length; ++y) {
+                    toAppend += '<tr>';
+                    for (let x = 0; x < board[0].length; ++x) {
+                        if (board[y][x] == @((int)GameBoardCellType.PlayerOne)) {
+                            toAppend += '<td class="p1"><div><i class="fas fa-times"></i></div></td>';
+                        } else if (board[y][x] == @((int)GameBoardCellType.PlayerTwo)) {
+                            toAppend += '<td class="p2"><div><i class="far fa-circle"></i></div></td>';
+                        } else if (board[y][x] == @((int)GameBoardCellType.PlayerOneHighlighted)) {
+                            toAppend += '<td class="p2h"><div><i class="far fa-circle"></i></div></td>';
+                        } else if (board[y][x] == @((int)GameBoardCellType.PlayerTwoHighlighted)) {
+                            toAppend += '<td class="p2h"><div><i class="fas fa-times"></i></div></td>';
+                        } else {
+                            toAppend += '<td class="empty"><div></div></td>';
+                        }
+                    }
+                    toAppend += '</tr>';
+                }
+                $('#gameplay-table tbody').empty();
+                $('#gameplay-table tbody').append(toAppend);
+            });
+
             // ------------------------------
             // Client Events
 
@@ -92,21 +116,6 @@
                 $('#chat-message-input').val("");
                 event.preventDefault();
             });
-
-
-
-            let toAppend = "";
-            for (let y = 0; y < 15; ++y) {
-                toAppend += '<tr>';
-                for (let x = 0; x < 15; ++x) {
-                    toAppend += '<td class="empty"><div></div></td>';
-                }
-                toAppend += '</tr>';
-            }
-            $('#gameplay-table tbody').append(toAppend);
-            //<td><div><i class="fas fa-times"></i></div></td>
-            //<td><div><i class="far fa-circle"></i></div></td>
-            //<td class="empty"><div></div></td>
         });
     </script>
 }
