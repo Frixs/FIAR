@@ -38,8 +38,15 @@ namespace Fiar
         /// <summary>
         /// Call to concede
         /// </summary>
-        /// <returns></returns>
         Task Concede();
+
+        /// <summary>
+        /// Call to send chat message
+        /// </summary>
+        /// <param name="nickname">The nickname</param>
+        /// <param name="message">The message</param>
+        /// <returns></returns>
+        Task ReceiveChatMessage(string nickname, string message);
     }
 
     /// <summary>
@@ -128,12 +135,12 @@ namespace Fiar
             if (user.Id.Equals(game.PlayerOneUserId))
             {
                 game.PlayerOne = Player.Convert(user, Context.ConnectionId, PlayerType.PlayerOne);
-                await UpdatePlayersCall(game);
+                await UpdatePlayersCallAsync(game);
             }
             else
             {
                 game.PlayerTwo = Player.Convert(user, Context.ConnectionId, PlayerType.PlayerTwo);
-                await UpdatePlayersCall(game);
+                await UpdatePlayersCallAsync(game);
             }
 
             // Once we have the last user (the only opponent one), flag up for starting the game
@@ -178,7 +185,7 @@ namespace Fiar
             }
 
             await Groups.RemoveFromGroupAsync(Context.ConnectionId, mGameGroupNamePrefix + game.Id);
-            await ConcedeCall(game);
+            await ConcedeCallAsync(game);
 
             // Log it
             mLogger.LogDebugSource($"User {user.Nickname} disconnected from the game {game.Id}!");
@@ -193,7 +200,42 @@ namespace Fiar
         #region Public Methods
 
         /// <summary>
-        /// The game turn by clicking the cell
+        /// Send chat message task
+        /// </summary>
+        /// <param name="message">Message to send</param>
+        public async Task SendChatMessage(string message)
+        {
+            // Get user by the claims
+            var user = await mUserManager.GetUserAsync(Context.User);
+            // If user does not have authorization...
+            if (!await AuthorizeUserAsync(user, PolicyNames.PlayerLevel))
+            {
+                mLogger.LogDebugSource($"Unauthorized user to disconnect! ({user?.UserName ?? ""})");
+                Context.Abort();
+                return;
+            }
+
+            // Get the game to play on
+            var game = await GetGameAsync();
+            if (game == null)
+            {
+                mLogger.LogErrorSource($"Failed to find the game to play on! ({user.UserName})");
+                return;
+            }
+
+            // Trim the message
+            message = message.Trim();
+
+            // Ignore empty messages
+            if (message.IsNullOrEmpty())
+                return;
+
+            // Cal the send chat message task
+            await ReceiveChatMessageCallAsync(game, user.Nickname, message);
+        }
+
+        /// <summary>
+        /// The game turn by clicking the cell task
         /// </summary>
         /// <param name="row">The player's turn row</param>
         /// <param name="column">The player's turn column</param>
@@ -261,7 +303,7 @@ namespace Fiar
 
                 // Call the victory
                 await RenderBoardCall(game);
-                await VictoryCall(game);
+                await VictoryCallAsync(game);
 
                 // Log it
                 mLogger.LogDebugSource($"Game {game.Id} has ended!");
@@ -285,7 +327,7 @@ namespace Fiar
             game.MoveTurnPointerToNextPlayer();
 
             // Call the next turn
-            await TurnCall(game);
+            await TurnCallAsync(game);
         }
 
         #endregion
@@ -295,56 +337,69 @@ namespace Fiar
         /// <summary>
         /// Method to call <see cref="IGameClient.RenderBoard(GameBoardCellType[][])"/> to the players
         /// </summary>
-        public async Task RenderBoardCall(GameSession game)
+        private async Task RenderBoardCall(GameSession game)
         {
             // Call for render the board to the players
             await Clients.Group(mGameGroupNamePrefix + game.Id).RenderBoard(game.Board);
             // Log it
-            mLogger.LogDebugSource($"Updating game board for game {game.Id}.");
+            mLogger.LogDebugSource($"Updating game board for the game {game.Id}.");
         }
 
         /// <summary>
         /// Method to call <see cref="IGameClient.UpdatePlayers(Player, Player)"/> to the players
         /// </summary>
-        public async Task UpdatePlayersCall(GameSession game)
+        private async Task UpdatePlayersCallAsync(GameSession game)
         {
             // Call to update players
             await Clients.Group(mGameGroupNamePrefix + game.Id).UpdatePlayers(game.PlayerOne, game.PlayerTwo);
             // Log it
-            mLogger.LogDebugSource($"Updating players for game {game.Id}: '{game.PlayerOne?.Nickname ?? ""}', '{game.PlayerTwo?.Nickname ?? ""}'.");
+            mLogger.LogDebugSource($"Updating players for the game {game.Id}: '{game.PlayerOne?.Nickname ?? ""}', '{game.PlayerTwo?.Nickname ?? ""}'.");
         }
 
         /// <summary>
         /// Method to call <see cref="IGameClient.Turn(PlayerType)"/> to the players
         /// </summary>
-        public async Task TurnCall(GameSession game)
+        private async Task TurnCallAsync(GameSession game)
         {
             // Call the next turn
             await Clients.Group(mGameGroupNamePrefix + game.Id).Turn(game.CurrentPlayer.Type);
             // Log it
-            mLogger.LogDebugSource($"Moving turn in game {game.Id}. Player on next turn: '{game.CurrentPlayer?.Nickname ?? ""}'.");
+            mLogger.LogDebugSource($"Moving turn in the game {game.Id}. Player on next turn: '{game.CurrentPlayer?.Nickname ?? ""}'.");
         }
 
         /// <summary>
         /// Method to call <see cref="IGameClient.Victory(PlayerType)"/> to the players
         /// </summary>
-        public async Task VictoryCall(GameSession game)
+        private async Task VictoryCallAsync(GameSession game)
         {
             // Call the victory
             await Clients.Group(mGameGroupNamePrefix + game.Id).Victory(game.CurrentPlayer.Type);
             // Log it
-            mLogger.LogDebugSource($"Resulting game {game.Id} in the victory of '{game.CurrentPlayer?.Nickname ?? ""}'.");
+            mLogger.LogDebugSource($"Resulting the game {game.Id} in the victory of '{game.CurrentPlayer?.Nickname ?? ""}'.");
         }
 
         /// <summary>
         /// Method to call <see cref="IGameClient.Concede()"/> to the players
         /// </summary>
-        public async Task ConcedeCall(GameSession game)
+        private async Task ConcedeCallAsync(GameSession game)
         {
             // Call to concede
             await Clients.Group(mGameGroupNamePrefix + game.Id).Concede();
             // Log it
-            mLogger.LogDebugSource($"Game {game.Id} ends.");
+            mLogger.LogDebugSource($"The game {game.Id} ends.");
+        }
+
+        /// <summary>
+        /// Method to call <see cref="IGameClient.ReceiveChatMessage(string, string)"/> to the players
+        /// </summary>
+        /// <param name="nickname">The nickname</param>
+        /// <param name="message">The message</param>
+        private async Task ReceiveChatMessageCallAsync(GameSession game, string nickname, string message)
+        {
+            // Call to send chat message
+            await Clients.Group(mGameGroupNamePrefix + game.Id).ReceiveChatMessage(nickname, message);
+            // Log it
+            mLogger.LogDebugSource($"New message in the game {game.Id} from '{nickname}'.");
         }
 
         #endregion

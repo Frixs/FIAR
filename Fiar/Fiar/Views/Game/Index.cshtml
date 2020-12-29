@@ -39,14 +39,12 @@
     <script>
         "use strict";
 
-        var chatConnection = new signalR.HubConnectionBuilder().withUrl("/chathub").build();
         var gameConnection = new signalR.HubConnectionBuilder().withUrl("/gamehub").build();
-        gameConnection.start();
-
+        
         //Disable send button until connection is established
         document.getElementById("sendButton").disabled = true;
 
-        chatConnection.on("ReceiveMessage", function (user, message) {
+        gameConnection.on("ReceiveChatMessage", function (user, message) {
             var msg = message.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
             var encodedMsg = user + " says " + msg;
             var li = document.createElement("li");
@@ -54,16 +52,15 @@
             document.getElementById("messagesList").appendChild(li);
         });
 
-        chatConnection.start().then(function () {
+        gameConnection.start().then(function () {
             document.getElementById("sendButton").disabled = false;
         }).catch(function (err) {
             return console.error(err.toString());
         });
 
         document.getElementById("sendButton").addEventListener("click", function (event) {
-            var user = document.getElementById("userInput").value;
             var message = document.getElementById("messageInput").value;
-            chatConnection.invoke("SendMessage", user, message).catch(function (err) {
+            gameConnection.invoke("SendChatMessage", message).catch(function (err) {
                 return console.error(err.toString());
             });
             event.preventDefault();

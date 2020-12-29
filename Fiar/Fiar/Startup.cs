@@ -252,7 +252,6 @@ namespace Fiar
                     pattern: "{controller=Home}/{action=Index}/{id?}");
                 //endpoints.MapHub<GameHub>("gamehub");
                 endpoints.MapHub<GameHub>("gamehub");
-                endpoints.MapHub<ChatHub>("chathub");
             });
 
             // Make sure we have the database.
