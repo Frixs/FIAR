@@ -74,7 +74,7 @@ namespace Fiar
                     // Get DB context
                     var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
 
-                    if (!dbContext.GameParticipants.Any(o => o.UserId.Equals(item.PlayerOneUserId) || o.UserId.Equals(item.PlayerTwoUserId)))
+                    if (!dbContext.GameParticipants.Any(o => o.Game.Result == GameResult.None && o.UserId.Equals(item.PlayerOneUserId) || o.UserId.Equals(item.PlayerTwoUserId)))
                     {
                         // Create game data model
                         var participants = new List<GameParticipantDataModel>();
@@ -155,9 +155,16 @@ namespace Fiar
                     var game = dbContext.Games.Find(item.Id);
                     if (game != null)
                     {
-                        dbContext.Games.Remove(game);
-                        if (dbContext.SaveChanges() > 0)
+                        if (game.Result == GameResult.None)
+                        {
+                            dbContext.Games.Remove(game);
+                            if (dbContext.SaveChanges() > 0)
+                                result = true;
+                        }
+                        else
+                        {
                             result = true;
+                        }
                     }
                 }
 

@@ -8,16 +8,38 @@ using System.Threading.Tasks;
 namespace Fiar
 {
     /// <summary>
-    /// TODO
+    /// Interface for game client interactions
     /// </summary>
     public interface IGameClient
     {
+        /// <summary>
+        /// Cal for rendering game board
+        /// </summary>
+        /// <param name="board">The board representation</param>
         Task RenderBoard(GameBoardCellType[][] board);
-        Task Color(string color);
+
+        /// <summary>
+        /// Call to update player data
+        /// </summary>
+        Task UpdatePlayers(Player playerOne, Player playerTwo);
+
+        /// <summary>
+        /// Call to next turn
+        /// </summary>
+        /// <param name="playerType">The player type on turn</param>
         Task Turn(PlayerType playerType);
-        Task RollCall(Player player1, Player player2);
+
+        /// <summary>
+        /// Call to victory
+        /// </summary>
+        /// <param name="playerType">The victory player type</param>
+        Task Victory(PlayerType playerType);
+
+        /// <summary>
+        /// Call to concede
+        /// </summary>
+        /// <returns></returns>
         Task Concede();
-        Task Victory(PlayerType playerType, GameBoardCellType[][] board);
     }
 
     /// <summary>
@@ -106,10 +128,12 @@ namespace Fiar
             if (user.Id.Equals(game.PlayerOneUserId))
             {
                 game.PlayerOne = Player.Convert(user, Context.ConnectionId, PlayerType.PlayerOne);
+                await UpdatePlayersCall(game);
             }
             else
             {
                 game.PlayerTwo = Player.Convert(user, Context.ConnectionId, PlayerType.PlayerTwo);
+                await UpdatePlayersCall(game);
             }
 
             // Once we have the last user (the only opponent one), flag up for starting the game
@@ -124,10 +148,10 @@ namespace Fiar
 
             if (game.InProgress)
             {
+                // Log it
+                mLogger.LogDebugSource($"The game {game.Id} is starting now!");
                 // Initial game starting process
-                // TODO
-                //CoinToss(game);
-                //await Clients.Group(game.Id.ToString()).RenderBoard(game.Board);
+                await RenderBoardCall(game);
             }
         }
 
@@ -154,7 +178,7 @@ namespace Fiar
             }
 
             await Groups.RemoveFromGroupAsync(Context.ConnectionId, mGameGroupNamePrefix + game.Id);
-            await Clients.Group(mGameGroupNamePrefix + game.Id).Concede();
+            await ConcedeCall(game);
 
             // Log it
             mLogger.LogDebugSource($"User {user.Nickname} disconnected from the game {game.Id}!");
@@ -166,20 +190,7 @@ namespace Fiar
 
         #endregion
 
-        /// <summary>
-        /// TODO
-        /// </summary>
-        public async Task UpdateUser(string email, string name)
-        {
-            //var game = mGameRepository.Games.FirstOrDefault(g => g.HasPlayer(Context.ConnectionId));
-            //if (game != null)
-            //{
-            //    var player = game.GetPlayer(Context.ConnectionId);
-            //    player.Email = email;
-            //    player.Name = name;
-            //    await Clients.Group(game.Id).RollCall(game.Player1, game.Player2);
-            //}
-        }
+        #region Public Methods
 
         /// <summary>
         /// The game turn by clicking the cell
@@ -225,22 +236,32 @@ namespace Fiar
                 return;
 
             // Call for render the board to the players
-            await Clients.Group(mGameGroupNamePrefix + game.Id).RenderBoard(game.Board);
+            await RenderBoardCall(game);
+
+            // Get DB game object
+            var dbGame = mContext.Games.Find(game.Id);
+            if (dbGame == null)
+            {
+                mLogger.LogCriticalSource($"Cannot find the game under the ID: {game.Id}!");
+                return;
+            }
 
             // Check victory conditions (only the current player can win)
             if (game.CheckVictory(row, column))
             {
-                // TODO
-                if (game.CurrentPlayer.Id.Equals(game.PlayerOne.Id))
-                    ; //UpdateHighScore(game.Player1, game.Player2);
+                // Update result in DB
+                if (game.CurrentPlayer.Id.Equals(game.PlayerTwo.Id))
+                    dbGame.Result = GameResult.PlayerTwoWon;
                 else
-                    ; //UpdateHighScore(game.Player2, game.Player1);
+                    dbGame.Result = GameResult.PlayerOneWon;
+                mContext.SaveChanges();
 
                 // Log it
                 mLogger.LogInformationSource($"User {game.CurrentPlayer.Nickname} won the game {game.Id}!");
 
                 // Call the victory
-                await Clients.Group(mGameGroupNamePrefix + game.Id).Victory(game.CurrentPlayer.Type, game.Board);
+                await RenderBoardCall(game);
+                await VictoryCall(game);
 
                 // Log it
                 mLogger.LogDebugSource($"Game {game.Id} has ended!");
@@ -250,12 +271,83 @@ namespace Fiar
                 return;
             }
 
+            // Add the turn into DB
+            mContext.GameMoves.Add(new GameMoveDataModel
+            {
+                GameId = dbGame.Id,
+                PosX = row,
+                PosY = column,
+                Type = game.CurrentPlayer.Type
+            });
+            mContext.SaveChanges();
+
             // Move to the next turn
             game.MoveTurnPointerToNextPlayer();
 
             // Call the next turn
-            await Clients.Group(mGameGroupNamePrefix + game.Id).Turn(game.CurrentPlayer.Type);
+            await TurnCall(game);
         }
+
+        #endregion
+
+        #region Call Methods
+
+        /// <summary>
+        /// Method to call <see cref="IGameClient.RenderBoard(GameBoardCellType[][])"/> to the players
+        /// </summary>
+        public async Task RenderBoardCall(GameSession game)
+        {
+            // Call for render the board to the players
+            await Clients.Group(mGameGroupNamePrefix + game.Id).RenderBoard(game.Board);
+            // Log it
+            mLogger.LogDebugSource($"Updating game board for game {game.Id}.");
+        }
+
+        /// <summary>
+        /// Method to call <see cref="IGameClient.UpdatePlayers(Player, Player)"/> to the players
+        /// </summary>
+        public async Task UpdatePlayersCall(GameSession game)
+        {
+            // Call to update players
+            await Clients.Group(mGameGroupNamePrefix + game.Id).UpdatePlayers(game.PlayerOne, game.PlayerTwo);
+            // Log it
+            mLogger.LogDebugSource($"Updating players for game {game.Id}: '{game.PlayerOne?.Nickname ?? ""}', '{game.PlayerTwo?.Nickname ?? ""}'.");
+        }
+
+        /// <summary>
+        /// Method to call <see cref="IGameClient.Turn(PlayerType)"/> to the players
+        /// </summary>
+        public async Task TurnCall(GameSession game)
+        {
+            // Call the next turn
+            await Clients.Group(mGameGroupNamePrefix + game.Id).Turn(game.CurrentPlayer.Type);
+            // Log it
+            mLogger.LogDebugSource($"Moving turn in game {game.Id}. Player on next turn: '{game.CurrentPlayer?.Nickname ?? ""}'.");
+        }
+
+        /// <summary>
+        /// Method to call <see cref="IGameClient.Victory(PlayerType)"/> to the players
+        /// </summary>
+        public async Task VictoryCall(GameSession game)
+        {
+            // Call the victory
+            await Clients.Group(mGameGroupNamePrefix + game.Id).Victory(game.CurrentPlayer.Type);
+            // Log it
+            mLogger.LogDebugSource($"Resulting game {game.Id} in the victory of '{game.CurrentPlayer?.Nickname ?? ""}'.");
+        }
+
+        /// <summary>
+        /// Method to call <see cref="IGameClient.Concede()"/> to the players
+        /// </summary>
+        public async Task ConcedeCall(GameSession game)
+        {
+            // Call to concede
+            await Clients.Group(mGameGroupNamePrefix + game.Id).Concede();
+            // Log it
+            mLogger.LogDebugSource($"Game {game.Id} ends.");
+        }
+
+        #endregion
 
         #region Private Helpers
 
