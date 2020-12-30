@@ -24,5 +24,10 @@
         /// Indicates including user challange request
         /// </summary>
         public bool IncludeIsChallanged { get; set; }
+
+        /// <summary>
+        /// Indicates including user is playing request
+        /// </summary>
+        public bool IncludeIsPlaying { get; set; }
     }
 }

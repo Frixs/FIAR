@@ -259,7 +259,7 @@ namespace Fiar
             var resultUser = UserDataModel.Convert(user);
             
             // Include additional data
-            await IncludeAdditionalDataAsync(resultUser, user, model.IncludeRoleList, model.IncludeOnlineStatus, loggedInUsers, model.IncludeIsFriendWith, model.IncludeIsChallanged);
+            await IncludeAdditionalDataAsync(resultUser, user, model.IncludeRoleList, model.IncludeOnlineStatus, loggedInUsers, model.IncludeIsFriendWith, model.IncludeIsChallanged, model.IncludeIsPlaying);
 
             // Return user details to user
             return new ApiResponse<Result_UserProfileDetailsApiModel>
@@ -346,7 +346,7 @@ namespace Fiar
 
             // Set additional user data
             foreach (var u in friends)
-                await IncludeAdditionalDataAsync(u, user, model.IncludeRoleList, model.IncludeOnlineStatus, loggedInUsers, model.IncludeIsFriendWith, model.IncludeIsChallanged);
+                await IncludeAdditionalDataAsync(u, user, model.IncludeRoleList, model.IncludeOnlineStatus, loggedInUsers, model.IncludeIsFriendWith, model.IncludeIsChallanged, model.IncludeIsPlaying);
 
             // Return successful response
             return new ApiResponse<Result_UserFriendProfilesApiModel>
@@ -397,7 +397,7 @@ namespace Fiar
 
             // Set additional user data
             foreach (var u in users)
-                await IncludeAdditionalDataAsync(u, user, model.IncludeRoleList, model.IncludeOnlineStatus, loggedInUsers, model.IncludeIsFriendWith, model.IncludeIsChallanged);
+                await IncludeAdditionalDataAsync(u, user, model.IncludeRoleList, model.IncludeOnlineStatus, loggedInUsers, model.IncludeIsFriendWith, model.IncludeIsChallanged, model.IncludeIsPlaying);
 
             // Return successful response
             return new ApiResponse<Result_AllUserProfilesApiModel>
@@ -450,7 +450,7 @@ namespace Fiar
             // Set additional user data
             foreach (var u in users)
             {
-                await IncludeAdditionalDataAsync(u, user, model.IncludeRoleList, model.IncludeOnlineStatus, loggedInUsers, model.IncludeIsFriendWith, model.IncludeIsChallanged);
+                await IncludeAdditionalDataAsync(u, user, model.IncludeRoleList, model.IncludeOnlineStatus, loggedInUsers, model.IncludeIsFriendWith, model.IncludeIsChallanged, model.IncludeIsPlaying);
                 if (loggedInUsers.ContainsKey(u.Username))
                     resultUsers.Add(u);
             }
@@ -508,7 +508,7 @@ namespace Fiar
             foreach (var req in requests)
             {
                 var u = UserDataModel.Convert(req.User);
-                await IncludeAdditionalDataAsync(u, user, model.IncludeRoleList, model.IncludeOnlineStatus, loggedInUsers, model.IncludeIsFriendWith, model.IncludeIsChallanged);
+                await IncludeAdditionalDataAsync(u, user, model.IncludeRoleList, model.IncludeOnlineStatus, loggedInUsers, model.IncludeIsFriendWith, model.IncludeIsChallanged, model.IncludeIsPlaying);
                 resultRequests.Add(new UserRequestViewModel
                 { 
                     Id = req.Id,
@@ -744,15 +744,21 @@ namespace Fiar
                 // Return failed response
                 return errorResponse;
 
-            var items = mContext.UserRequests.Where(o => o.UserId.Equals(model.OpponentUserId) && o.RelatedUserId.Equals(user.Id));
-            // Check the requests exist
-            if (items.Count() > 0)
+            //TODO ---
+            var acceptReq = mContext.UserRequests.FirstOrDefault(o => o.Id == model.Id && o.UserId.Equals(model.OpponentUserId) && o.RelatedUserId.Equals(user.Id));
+            // Check the request exists
+            if (acceptReq != null)
             {
-                mContext.UserRequests.RemoveRange(items);
-                // Try to check if there is the same request from the opponent and remove it optionally
-                var opponentItems = mContext.UserRequests.Where(o => o.UserId.Equals(user.Id) && o.RelatedUserId.Equals(model.OpponentUserId));
-                if (opponentItems.Count() > 0)
-                    mContext.UserRequests.RemoveRange(opponentItems);
+                // Remove the request
+                mContext.UserRequests.Remove(acceptReq);
+
+                // Now, check for any desync challange related requests between these two users and delete them, if any
+                var opponentAcceptReqs = mContext.UserRequests.Where(o => o.Type == UserRequestType.AcceptChallange && o.UserId.Equals(user.Id) && o.RelatedUserId.Equals(model.OpponentUserId));
+                if (opponentAcceptReqs.Count() > 0)
+                    mContext.UserRequests.RemoveRange(opponentAcceptReqs);
+                var challangeReqs = mContext.UserRequests.Where(o => o.Type == UserRequestType.Challange && ((o.UserId.Equals(user.Id) && o.RelatedUserId.Equals(model.OpponentUserId)) || (o.UserId.Equals(model.OpponentUserId) && o.RelatedUserId.Equals(user.Id))));
+                if (challangeReqs.Count() > 0)
+                    mContext.UserRequests.RemoveRange(challangeReqs);
 
                 // Save changes
                 mContext.SaveChanges();
@@ -877,7 +883,7 @@ namespace Fiar
         /// Include additional data into the user dataw model
         /// </summary>
         /// <returns>The same model with additional data included</returns>
-        private async Task IncludeAdditionalDataAsync(UserDataModel user, ApplicationUser appUser, bool roles = false, bool onlineStatus = false, Dictionary<string, DateTime> loggedInUserCache = null, bool isFriendWith = false, bool isChallanged = false)
+        private async Task IncludeAdditionalDataAsync(UserDataModel user, ApplicationUser appUser, bool roles = false, bool onlineStatus = false, Dictionary<string, DateTime> loggedInUserCache = null, bool isFriendWith = false, bool isChallanged = false, bool isPlaying = false)
         {
             if (roles && appUser != null)
             {
@@ -904,6 +910,12 @@ namespace Fiar
                         || o.Type == UserRequestType.Challange && o.UserId.Equals(appUser.Id) && o.RelatedUserId.Equals(user.Id)
                         )
                     .Count() > 0;
+            }
+            if (isPlaying && !user.Id.Equals(appUser.Id))
+            {
+                // Set is playing request status
+                user.IsPlaying = mContext.GameParticipants
+                    .Any(o => o.Game.Result == GameResult.None && o.UserId.Equals(user.Id));
             }
         }
 
