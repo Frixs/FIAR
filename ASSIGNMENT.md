@@ -1,5 +1,3 @@
-![Inventi](../img/inventi.png)
-
 # Semester Project PIA 2020
 
 You will be implementing an on-line version of the
