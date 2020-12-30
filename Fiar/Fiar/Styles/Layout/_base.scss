@@ -16,6 +16,15 @@ main {
     min-height: calc(100vh - 143px); // - footer - mmenu
 }
 
-.sticky-footer {
-    height: 70px;
+footer {
+    position: relative;
+    background-color: $color-background-main;
+
+    &.sticky-footer {
+        height: 70px;
+    }
+}
+
+nav, footer {
+    z-index: 150;
 }

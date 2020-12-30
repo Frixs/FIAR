@@ -6,6 +6,17 @@
     <h1 class="display-4">GAME MATCH</h1>
 </div>
 <div id="game-index-container" class="container-fluid">
+    <div id="game-turn-modal" class="game-overlay-modal display-none">
+        <div class="mid">
+            <b>YOUR TURN</b>
+        </div>
+    </div>
+    <div id="game-victory-modal" class="game-overlay-modal display-none">
+        <div class="mid">
+            <b></b>
+            <a class="btn btn-dark" asp-area="" asp-controller="Lobby" asp-action="Index">BACK TO LOBBY</a>
+        </div>
+    </div>
     <strong id="player-label"><span class="p1">...</span> -VS- <span class="p2">...</span></strong>
     <div class="row">
         <div class="col-xl-9">
@@ -40,6 +51,8 @@
 @section Scripts{
     <script>
         "use strict";
+
+        var currentPlayerType = -1;
 
         // Disable send button until connection is established
         document.getElementById('chat-send-btn').disabled = true;
@@ -94,25 +107,52 @@
 
             // Update players
             connection.on("@nameof(IGameClient.UpdatePlayers)", function (playerOneObj, playerTwoObj) {
-                if (playerOneObj != null)
+                if (playerOneObj != null) {
                     $('#player-label .p1').html(playerOneObj.nickname);
-                if (playerTwoObj != null)
+
+                    if (playerOneObj.connectionId == connection.connectionId) {
+                        currentPlayerType = @((int)PlayerType.PlayerOne);
+                    }
+                }
+                if (playerTwoObj != null) {
                     $('#player-label .p2').html(playerTwoObj.nickname);
+
+                    if (playerTwoObj.connectionId == connection.connectionId) {
+                        currentPlayerType = @((int)PlayerType.PlayerTwo);
+                    }
+                }
             });
 
             // Next turn
             connection.on("@nameof(IGameClient.Turn)", function (playerType) {
+                if (playerType == @((int)PlayerType.PlayerTwo)) {
+                    $('#player-label .p1').removeClass('--turn');
+                    $('#player-label .p2').addClass('--turn');
+                } else {
+                    $('#player-label .p2').removeClass('--turn');
+                    $('#player-label .p1').addClass('--turn');
+                }
 
+                if (playerType == currentPlayerType) {
+                    $('#game-turn-modal').removeClass('display-none');
+                    setTimeout(function () { $('#game-turn-modal').addClass('display-none'); }, 2500);
+                }
             });
 
             // On victory
             connection.on("@nameof(IGameClient.Victory)", function (playerType) {
-
+                if (playerType == currentPlayerType) {
+                    $('#game-victory-modal .mid b').text("YOU WON");
+                } else {
+                    $('#game-victory-modal .mid b').text("YOU LOST");
+                }
+                $('#game-victory-modal').removeClass('display-none');
             });
 
             // On concede
             connection.on("@nameof(IGameClient.Concede)", function () {
-
+                $('#game-victory-modal .mid b').text("THE OPPONENT HAS DISCONNECTED");
+                $('#game-victory-modal').removeClass('display-none');
             });
 
             // Receive chat message
