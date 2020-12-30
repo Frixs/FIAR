@@ -1,4 +1,5 @@
 ﻿using Ixs.DNA;
+using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
 using System.Net.Mail;
@@ -17,7 +18,15 @@ namespace Fiar
     {
         #region Private Members (Injects)
 
-        private readonly IConfigBox mConfigBox;
+        /// <summary>
+        /// Injection - <inheritdoc cref="ILogger"/>
+        /// </summary>
+        protected readonly ILogger mLogger;
+
+        /// <summary>
+        /// Injection - <inheritdoc cref="IConfigBox"/>
+        /// </summary>
+        protected readonly IConfigBox mConfigBox;
 
         #endregion
 
@@ -26,9 +35,10 @@ namespace Fiar
         /// <summary>
         /// Default constructor
         /// </summary>
-        public BaseEmailSender(IConfigBox configBox)
+        public BaseEmailSender(ILogger logger, IConfigBox configBox)
         {
             mConfigBox = configBox ?? throw new ArgumentNullException(nameof(configBox));
+            mLogger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
         #endregion
@@ -42,7 +52,7 @@ namespace Fiar
             if (details == null)
             {
                 // Log it
-                FrameworkDI.Logger.LogErrorSource("Mail details are not specified!");
+                mLogger.LogErrorSource("Mail details are not specified!");
                 return new SendEmailResponse() { Errors = new List<string>() { "Mail details are not specified!" } };
             }
 
@@ -63,7 +73,7 @@ namespace Fiar
             if (details == null || details.Length == 0)
             {
                 // Log it
-                FrameworkDI.Logger.LogErrorSource("Mail details are not specified!");
+                mLogger.LogErrorSource("Mail details are not specified!");
                 return new SendEmailResponse() { Errors = new List<string>() { "Mail details are not specified!" } };
             }
 
@@ -122,19 +132,19 @@ namespace Fiar
                 await client.SendMailAsync(mail);
 
                 // Log it
-                FrameworkDI.Logger.LogInformationSource($"Mail has been sent from '{mail.From}' to '{mail.To}'.");
+                mLogger.LogInformationSource($"Mail has been sent from '{mail.From}' to '{mail.To}'.");
             }
             catch (SmtpException ex)
             {
                 response.Add(ex.Message);
                 // Log it
-                FrameworkDI.Logger.LogErrorSource($"The connection to the SMTP server failed, authorization failed or the request timed out! {ex.Message}");
+                mLogger.LogErrorSource($"The connection to the SMTP server failed, authorization failed or the request timed out! {ex.Message}");
             }
             catch (Exception ex)
             {
                 response.Add(ex.Message);
                 // Log it
-                FrameworkDI.Logger.LogErrorSource($"Something went wrong during senting mail! {ex.Message}");
+                mLogger.LogErrorSource($"Something went wrong during senting mail! {ex.Message}");
             }
             finally
             {

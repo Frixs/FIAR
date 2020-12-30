@@ -60,14 +60,14 @@ namespace Fiar
         /// <param name="userManager">The Identity user manager</param>
         /// <param name="signInManager">The Identity sign in manager</param>
         /// <param name="roleManager">The Identity role manager</param>
-        public HomeController(ApplicationDbContext context, UserManager<ApplicationUser> userManager, SignInManager<ApplicationUser> signInManager, RoleManager<IdentityRole> roleManager, IConfigBox configBox)
+        public HomeController(ApplicationDbContext context, UserManager<ApplicationUser> userManager, SignInManager<ApplicationUser> signInManager, RoleManager<IdentityRole> roleManager, ILogger logger, IConfigBox configBox)
         {
             mContext = context;
             mUserManager = userManager;
             mSignInManager = signInManager;
             mRoleManager = roleManager;
             mConfigBox = configBox ?? throw new ArgumentNullException(nameof(configBox));
-            mLogger = FrameworkDI.Logger ?? throw new ArgumentNullException(nameof(mLogger));
+            mLogger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
         #endregion

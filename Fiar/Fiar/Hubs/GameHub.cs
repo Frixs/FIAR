@@ -97,13 +97,13 @@ namespace Fiar
         /// <summary>
         /// Default constructor
         /// </summary>
-        public GameHub(ApplicationDbContext context, UserManager<ApplicationUser> userManager, IRepository<GameSession> gameRepository, IConfigBox configBox)
+        public GameHub(ApplicationDbContext context, UserManager<ApplicationUser> userManager, ILogger logger, IRepository<GameSession> gameRepository, IConfigBox configBox)
         {
             mContext = context;
             mUserManager = userManager;
             mGameRepository = gameRepository ?? throw new ArgumentNullException(nameof(gameRepository));
             mConfigBox = configBox ?? throw new ArgumentNullException(nameof(configBox));
-            mLogger = FrameworkDI.Logger ?? throw new ArgumentNullException(nameof(mLogger));
+            mLogger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
         #endregion

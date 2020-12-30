@@ -40,11 +40,11 @@ namespace Fiar
         /// <summary>
         /// Default constructor
         /// </summary>
-        public GameRepository(IServiceScopeFactory serviceScopeFactory, IConfigBox configBox)
+        public GameRepository(ILogger logger, IServiceScopeFactory serviceScopeFactory, IConfigBox configBox)
         {
             mServiceScopeFactory = serviceScopeFactory ?? throw new ArgumentNullException(nameof(serviceScopeFactory));
             mConfigBox = configBox ?? throw new ArgumentNullException(nameof(configBox));
-            mLogger = FrameworkDI.Logger ?? throw new ArgumentNullException(nameof(mLogger));
+            mLogger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
         #endregion

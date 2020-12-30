@@ -75,7 +75,7 @@ namespace Fiar
         /// <param name="userManager">The Identity user manager</param>
         /// <param name="signInManager">The Identity sign in manager</param>
         /// <param name="roleManager">The Identity role manager</param>
-        public ApiController(ApplicationDbContext context, UserManager<ApplicationUser> userManager, SignInManager<ApplicationUser> signInManager, RoleManager<IdentityRole> roleManager, IMemoryCache memoryCache, IConfigBox configBox, IRepository<GameSession> gameRepository)
+        public ApiController(ApplicationDbContext context, UserManager<ApplicationUser> userManager, SignInManager<ApplicationUser> signInManager, RoleManager<IdentityRole> roleManager, IMemoryCache memoryCache, ILogger logger, IConfigBox configBox, IRepository<GameSession> gameRepository)
         {
             mContext = context;
             mUserManager = userManager;
@@ -84,7 +84,7 @@ namespace Fiar
             mMemoryCache = memoryCache;
             mConfigBox = configBox ?? throw new ArgumentNullException(nameof(configBox));
             mGameRepository = gameRepository ?? throw new ArgumentNullException(nameof(gameRepository));
-            mLogger = FrameworkDI.Logger ?? throw new ArgumentNullException(nameof(mLogger));
+            mLogger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
         #endregion
