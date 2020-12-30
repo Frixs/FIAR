@@ -1,0 +1,15 @@
+﻿@model Fiar.ViewModels.Acl.UserListViewModel
+@{
+    ViewData["Title"] = "ACL";
+}
+
+<div class="text-center">
+    <h1 class="display-4">ACL</h1>
+    @foreach (var user in Model.Users)
+    {
+        <p>
+            <strong>User: @user.Username / Email: @user.Email / Nickname: @user.Nickname</strong>
+            <a class="nav-link text-dark" asp-area="" asp-controller="Acl" asp-action="UserEdit" asp-route-u="@user.Id">Edit</a>
+        </p>
+    }
+</div>

@@ -1,0 +1,420 @@
+﻿@{
+    ViewData["Title"] = "Lobby";
+}
+
+<div class="text-center">
+    <h1 class="display-4">LOBBY</h1>
+</div>
+<div id="lobby-index-container" class="container-fluid">
+    <div class="row">
+        <div class="col-xl-4">
+            <div class="text-center">
+                <h2>Online Players</h2>
+            </div>
+            <table class="table player-table">
+                <tbody id="all-users-tbody">
+                </tbody>
+            </table>
+        </div>
+        <div class="col-xl-4">
+            <div class="text-center">
+                <h2>Requests</h2>
+            </div>
+            <table class="table">
+                <tbody id="requests-tbody">
+                </tbody>
+            </table>
+        </div>
+        <div class="col-xl-4">
+            <div class="text-center">
+                <h2>Friend List</h2>
+            </div>
+            <table class="table player-table">
+                <tbody id="friend-users-tbody">
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+@section Scripts{
+    <script>
+        // READY
+        $(document).ready(function () {
+            update();
+        });
+
+        // Events
+        $(document).on('click', '.challange-btn', function () {
+            let uid = $(this).closest('tr').attr('data-uid');
+            addUserRequestFunction(@((int)UserRequestType.Challange), uid);
+            $(this).remove();
+        });
+        $(document).on('click', '.add-friend-btn', function () {
+            let uid = $(this).closest('tr').attr('data-uid');
+            addUserRequestFunction(@((int)UserRequestType.Friend), uid);
+            $(this).remove();
+        });
+        $(document).on('click', '.remove-friend-btn', function () {
+            let uid = $(this).closest('tr').attr('data-uid');
+            deleteUserFriendFunction(uid);
+            $(this).remove();
+        });
+        $(document).on('click', '.accept-request-btn', function () {
+            let rid = $(this).closest('tr').attr('data-rid');
+            let rtype = $(this).closest('tr').attr('data-rtype');
+            let uid = $(this).closest('tr').attr('data-uid');
+            acceptRequestFunction(parseInt(rid), rtype, uid);
+            $(this).closest('tr').remove();
+        });
+        $(document).on('click', '.decline-request-btn', function () {
+            let rid = $(this).closest('tr').attr('data-rid');
+            deleteUserRequestFunction(parseInt(rid));
+            $(this).closest('tr').remove();
+        });
+
+        // FUNCTION
+        // Data update loop
+        function update() {
+            updateUsersFunction();
+            updateRequestsFunction();
+            updateFriendListFunction();
+
+            // Repeat
+            setTimeout(update, 10_000);
+        }
+
+        // FUNCTION
+        // Update online users
+        function updateUsersFunction() {
+            // AJAX POST
+            $.ajax({
+                url: "@ApiRoutes.GetOnlineUserProfiles",
+                type: "POST",
+                dataType: "json",
+                contentType: 'application/json;charset=utf-8',
+                data: JSON.stringify({ IncludeRoleList: false, IncludeOnlineStatus: true, IncludeIsFriendWith: true, IncludeIsChallanged: true }),
+                // Success
+                success: function (data) {
+                    //console.log(data);
+                    $('#all-users-tbody').empty();
+                    for (var i = 0; i < data.response.userModels.length; ++i) {
+                        appendPlayerTableRow('#all-users-tbody', data.response.userModels[i]);
+                    }
+                    if (data.response.userModels.length == 0) {
+                        $('#all-users-tbody').append(
+                            '<tr>'
+                            + '<td class="text-center">no players</td>'
+                            + '</tr>'
+                        );
+                    }
+                },
+                // Error
+                error: function (data) {
+                    // If unauthorized error...
+                    if (data.status == 401) {
+                        window.alert = function () { };
+                        window.location.href = "@(WebRoutes.Login)";
+                    } else {
+                        window.alert = function () { };
+                        window.location.href = "@(WebRoutes.Error500)";
+                    }
+                }
+            });
+        }
+
+        // FUNCTION
+        // Update user requests
+        function updateRequestsFunction() {
+            // AJAX POST
+            $.ajax({
+                url: "@ApiRoutes.GetUserRequests",
+                type: "POST",
+                dataType: "json",
+                contentType: 'application/json;charset=utf-8',
+                data: JSON.stringify({ IncludeRoleList: false, IncludeOnlineStatus: true, IncludeIsFriendWith: false, IncludeIsChallanged: false }),
+                // Success
+                success: function (data) {
+                    $('#requests-tbody').empty();
+                    for (var i = 0; i < data.response.requestModels.length; ++i) {
+                        $('#requests-tbody').append(
+                            '<tr class="--' + (data.response.requestModels[i].user.isOnline ? 'online' : 'offline') + '" data-rid="' + data.response.requestModels[i].id + '" data-rtype="' + data.response.requestModels[i].type + '" data-uid="' + data.response.requestModels[i].user.id + '">'
+                            + '<td>' + data.response.requestModels[i].user.nickname + '</td>'
+                            + '<td class="status-indicator"><i class="fas fa-circle"></i></td>'
+                            + '<td><b>' + (data.response.requestModels[i].type == @((int)UserRequestType.Friend) ? 'FRIEND' : (data.response.requestModels[i].type == @((int)UserRequestType.Challange) ? 'CHALLANGE' : 'JOIN MATCH')) + '</b></td>'
+                            + '<td><button class="btn btn-success lobby-table-btn accept-request-btn">ACCEPT</button></td>'
+                            + '<td><button class="btn btn-danger lobby-table-btn decline-request-btn">DECLINE</button></td>'
+                            + '</tr>'
+                        );
+                    }
+                    if (data.response.requestModels.length == 0) {
+                        $('#requests-tbody').append(
+                            '<tr>'
+                            + '<td class="text-center">no requests</td>'
+                            + '</tr>'
+                        );
+                    }
+                },
+                // Error
+                error: function (data) {
+                    // If unauthorized error...
+                    if (data.status == 401) {
+                        window.alert = function () { };
+                        window.location.href = "@(WebRoutes.Login)";
+                    } else {
+                        window.alert = function () { };
+                        window.location.href = "@(WebRoutes.Error500)";
+                    }
+                }
+            });
+        }
+
+        // FUNCTION
+        // Update friend list
+        function updateFriendListFunction() {
+            // AJAX POST
+            $.ajax({
+                url: "@ApiRoutes.GetUserFriendProfiles",
+                type: "POST",
+                dataType: "json",
+                contentType: 'application/json;charset=utf-8',
+                data: JSON.stringify({ IncludeRoleList: false, IncludeOnlineStatus: true, IncludeIsFriendWith: true, IncludeIsChallanged: true }),
+                // Success
+                success: function (data) {
+                    //console.log(data);
+                    $('#friend-users-tbody').empty();
+                    for (var i = 0; i < data.response.friendModels.length; ++i) {
+                        appendPlayerTableRow('#friend-users-tbody', data.response.friendModels[i]);
+                    }
+                    if (data.response.friendModels.length == 0) {
+                        $('#friend-users-tbody').append(
+                            '<tr>'
+                            + '<td class="text-center">no friends</td>'
+                            + '</tr>'
+                        );
+                    }
+                },
+                // Error
+                error: function (data) {
+                    // If unauthorized error...
+                    if (data.status == 401) {
+                        window.alert = function () { };
+                        window.location.href = "@(WebRoutes.Login)";
+                    } else {
+                        window.alert = function () { };
+                        window.location.href = "@(WebRoutes.Error500)";
+                    }
+                }
+            });
+        }
+
+        // FUNCTION
+        // Add a new user request task
+        function addUserRequestFunction(rtype, uid) {
+            // AJAX POST
+            $.ajax({
+                url: "@ApiRoutes.AddUserRequest",
+                type: "POST",
+                dataType: "json",
+                contentType: 'application/json;charset=utf-8',
+                data: JSON.stringify({ Type: rtype, RelatedUserId: uid }),
+                // Success
+                success: function (data) {
+                    // user feedback here
+                    if (data.errorMessage == null) {
+                        alert("Request successfully sent!");
+                    } else {
+                        alert(data.errorMessage);
+                    }
+                },
+                // Error
+                error: function (data) {
+                    // If unauthorized error...
+                    if (data.status == 401) {
+                        window.alert = function () { };
+                        window.location.href = "@(WebRoutes.Login)";
+                    } else {
+                        window.alert = function () { };
+                        window.location.href = "@(WebRoutes.Error500)";
+                    }
+                }
+            });
+        }
+
+        // FUNCTION
+        // Delete a user request task
+        function deleteUserRequestFunction(rid) {
+            // AJAX POST
+            $.ajax({
+                url: "@ApiRoutes.DeleteUserRequest",
+                type: "POST",
+                dataType: "json",
+                contentType: 'application/json;charset=utf-8',
+                data: JSON.stringify({ Id: rid }),
+                // Success
+                success: function (data) {
+                    // user feedback here
+                    if (data.errorMessage == null) {
+                        //alert("");
+                    } else {
+                        alert(data.errorMessage);
+                    }
+                },
+                // Error
+                error: function (data) {
+                    // If unauthorized error...
+                    if (data.status == 401) {
+                        window.alert = function () { };
+                        window.location.href = "@(WebRoutes.Login)";
+                    } else {
+                        window.alert = function () { };
+                        window.location.href = "@(WebRoutes.Error500)";
+                    }
+                }
+            });
+        }
+
+        // FUNCTION
+        // Delete user friend task
+        function deleteUserFriendFunction(uid) {
+            // AJAX POST
+            $.ajax({
+                url: "@ApiRoutes.DeleteUserFriend",
+                type: "POST",
+                dataType: "json",
+                contentType: 'application/json;charset=utf-8',
+                data: JSON.stringify({ FriendUserId: uid }),
+                // Success
+                success: function (data) {
+                    // user feedback here
+                    if (data.errorMessage == null) {
+                        //alert("");
+                    } else {
+                        alert(data.errorMessage);
+                    }
+                },
+                // Error
+                error: function (data) {
+                    // If unauthorized error...
+                    if (data.status == 401) {
+                        window.alert = function () { };
+                        window.location.href = "@(WebRoutes.Login)";
+                    } else {
+                        window.alert = function () { };
+                        window.location.href = "@(WebRoutes.Error500)";
+                    }
+                }
+            });
+        }
+
+        // FUNCTION
+        // Accept user request task
+        function acceptRequestFunction(rid, rtype, uid) {
+            console.log("x");
+            if (rtype == @((int)UserRequestType.Challange)) {
+                console.log("y");
+                // AJAX POST
+                $.ajax({
+                    url: "@ApiRoutes.AddGameByRequest",
+                    type: "POST",
+                    dataType: "json",
+                    contentType: 'application/json;charset=utf-8',
+                    data: JSON.stringify({ Id: rid, OpponentUserId: uid }),
+                    // Success
+                    success: function (data) {
+                        // user feedback here
+                        if (data.errorMessage == null) {
+                            window.alert = function () { };
+                            window.location.href = "@(WebRoutes.Game)";
+                        } else {
+                            alert(data.errorMessage);
+                        }
+                    },
+                    // Error
+                    error: function (data) {
+                        // If unauthorized error...
+                        if (data.status == 401) {
+                            window.alert = function () { };
+                            window.location.href = "@(WebRoutes.Login)";
+                        } else {
+                            window.alert = function () { };
+                            window.location.href = "@(WebRoutes.Error500)";
+                        }
+                    }
+                });
+            } else if (rtype == @((int)UserRequestType.AcceptChallange)) {
+                // AJAX POST
+                $.ajax({
+                    url: "@ApiRoutes.DeleteUserRequest",
+                    type: "POST",
+                    dataType: "json",
+                    contentType: 'application/json;charset=utf-8',
+                    data: JSON.stringify({ Id: rid }),
+                    // Success
+                    success: function (data) {
+                        // user feedback here
+                        if (data.errorMessage == null) {
+                            window.alert = function () { };
+                            window.location.href = "@(WebRoutes.Game)";
+                        } else {
+                            alert(data.errorMessage);
+                        }
+                    },
+                    // Error
+                    error: function (data) {
+                        // If unauthorized error...
+                        if (data.status == 401) {
+                            window.alert = function () { };
+                            window.location.href = "@(WebRoutes.Login)";
+                        } else {
+                            window.alert = function () { };
+                            window.location.href = "@(WebRoutes.Error500)";
+                        }
+                    }
+                });
+            } else {
+                // AJAX POST
+                $.ajax({
+                    url: "@ApiRoutes.AddUserFriendByRequest",
+                    type: "POST",
+                    dataType: "json",
+                    contentType: 'application/json;charset=utf-8',
+                    data: JSON.stringify({ Id: rid, FriendUserId: uid }),
+                    // Success
+                    success: function (data) {
+                        // user feedback here
+                        if (data.errorMessage == null) {
+                            //alert("");
+                        } else {
+                            alert(data.errorMessage);
+                        }
+                    },
+                    // Error
+                    error: function (data) {
+                        // If unauthorized error...
+                        if (data.status == 401) {
+                            window.alert = function () { };
+                            window.location.href = "@(WebRoutes.Login)";
+                        } else {
+                            window.alert = function () { };
+                            window.location.href = "@(WebRoutes.Error500)";
+                        }
+                    }
+                });
+            }
+        }
+
+        // FUNCTION
+        // Append player data into a player table row
+        function appendPlayerTableRow(ctx, user) {
+            $(ctx).append(
+                '<tr class="--' + (user.isOnline ? 'online' : 'offline') + '" data-uid="' + user.id + '">'
+                + '<td>' + user.nickname + '</td>'
+                + '<td class="status-indicator"><i class="fas fa-circle"></i></td>'
+                + '<td>' + (user.isChallanged == null ? '' : (user.isChallanged ? '' : '<button class="btn btn-dark lobby-table-btn challange-btn">CHALLANGE</button>')) + '</td>'
+                + '<td>' + (user.isFriendWith == null ? '' : (user.isFriendWith ? '<button class="btn btn-danger lobby-table-btn remove-friend-btn"><i class="fas fa-user-minus"></i></button>' : '<button class="btn btn-success lobby-table-btn add-friend-btn"><i class="fas fa-user-plus"></i></button>')) + '</td>'
+                + '</tr>'
+            );
+        }
+    </script>
+}

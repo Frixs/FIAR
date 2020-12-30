@@ -3,9 +3,18 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>@ViewData["Title"] - Fiar</title>
-    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
-    <link rel="stylesheet" href="~/css/site.css" />
+    <title>Fiar - @ViewData["Title"]</title>
+
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+
+    <!-- Favicon -->
+    <link rel="icon" type="image/x-icon" href="~/favicon.ico">
+
+    <!-- Include vendor CSS -->
+    <link rel="stylesheet" href="~/vendor/vendor.min.css" />
+
+    <!-- Include app CSS -->
+    <link rel="stylesheet" href="~/css/app.min.css" />
 </head>
 <body>
     <header>
@@ -16,33 +25,75 @@
                         aria-expanded="false" aria-label="Toggle navigation">
                     <span class="navbar-toggler-icon"></span>
                 </button>
-                <div class="navbar-collapse collapse d-sm-inline-flex flex-sm-row-reverse">
+                <li class="navbar-collapse collapse d-sm-inline-flex flex-sm-row-reverse">
                     <ul class="navbar-nav flex-grow-1">
                         <li class="nav-item">
                             <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="Index">Home</a>
                         </li>
-                        <li class="nav-item">
-                            <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="Privacy">Privacy</a>
-                        </li>
+                        @if (ViewData["notInitialized"] != null)
+                        {
+                            <li class="nav-item">
+                                <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="InitializeRequest">Initialize</a>
+                            </li>
+                        }
+                        @if (User.Identity.IsAuthenticated && User.IsInRole(RoleNames.Administrator))
+                        {
+                            <li class="nav-item">
+                                <a class="nav-link text-dark" asp-area="" asp-controller="Acl" asp-action="Index">ACL</a>
+                            </li>
+                        }
+                        @if (User.Identity.IsAuthenticated && User.IsInRole(RoleNames.Player))
+                        {
+                            <li class="nav-item">
+                                <a class="nav-link text-dark" asp-area="" asp-controller="Lobby" asp-action="Index">Lobby</a>
+                            </li>
+                        }
+                        @if (User.Identity.IsAuthenticated)
+                        {
+                            <li class="nav-item">
+                                <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="LogoutRequest">Logout (@User.Identity.Name)</a>
+                            </li>
+                        }
+                        else
+                        {
+                            <li class="nav-item">
+                                <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="Login">Login</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="Register">Register</a>
+                            </li>
+                        }
                     </ul>
-                </div>
+            </div>
             </div>
         </nav>
     </header>
-    <div class="container">
+    <div class="container-fluid">
         <main role="main" class="pb-3">
             @RenderBody()
         </main>
     </div>
 
-    <footer class="border-top footer text-muted">
+    <footer class="border-top footer sticky-footer text-muted">
         <div class="container">
-            &copy; 2020 - Fiar - <a asp-area="" asp-controller="Home" asp-action="Privacy">Privacy</a>
+            &copy; 2020 - Fiar
         </div>
     </footer>
-    <script src="~/lib/jquery/dist/jquery.min.js"></script>
-    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="~/js/site.js" asp-append-version="true"></script>
+
+    <!-- Include vendor JS -->
+    <script src="~/vendor/vendor.min.js" asp-append-version="true"></script>
+
+    <!-- Include own JS -->
+    <script src="~/js/DateFunctions.js"></script>
+
+    <!-- Tooltip -->
+    <script>
+        $('body').tooltip({
+            selector: '[data-toggle=tooltip]'
+        });
+    </script>
+
+    <!-- Include Specific Page Scripts -->
     @RenderSection("Scripts", required: false)
 </body>
 </html>

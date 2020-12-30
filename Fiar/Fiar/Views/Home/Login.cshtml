@@ -1,0 +1,58 @@
+﻿@model Fiar.Put_LoginCredentialsApiModel
+
+@{
+    ViewData["Title"] = "Login";
+}
+<div class="text-center">
+    <h1 class="display-4">LOGIN</h1>
+</div>
+<div class="container">
+    @if (@Model != null)
+    {
+        <div>Invalid credentials.</div>
+    }
+    <form asp-controller="Home" asp-action="LoginRequest" asp-route-returnUrl="@ViewData["returnUrl"]" class="needs-validation" novalidate>
+        <div class="form-group">
+            <label asp-for="UsernameOrEmail">Username:</label>
+            <input asp-for="UsernameOrEmail" type="text" maxlength="@Fiar.UserDataModel.Username_MaxLength" class="form-control" placeholder="Enter username" value="@Model?.UsernameOrEmail" required autofocus>
+            <div class="valid-feedback">Valid.</div>
+            <div class="invalid-feedback">Please check again this field.</div>
+        </div>
+        <div class="form-group margin-bottom-30">
+            <label asp-for="Password">Password:</label>
+            <input asp-for="Password" type="password" maxlength="@Fiar.UserDataModel.Password_MaxLength" class="form-control" placeholder="Enter password" required>
+            <div class="valid-feedback">Valid.</div>
+            <div class="invalid-feedback">Please check again this field.</div>
+        </div>
+        <div class="form-group form-check custom-control custom-checkbox margin-bottom-30">
+            <input class="custom-control-input" type="checkbox" asp-for="StayLoggedIn">
+            <label asp-for="StayLoggedIn" class="custom-control-label">Remember Me</label>
+        </div>
+        <button type="submit" class="btn btn-color-dark d-block mx-auto">Submit</button>
+    </form>
+
+    <a asp-area="" asp-controller="Home" asp-action="Index" class="btn btn-color-dark-nobg d-block mx-auto margin-top-50">Go Back</a>
+</div>
+
+@section Scripts{
+    <script>
+        // Disable form submissions if there are invalid fields
+        (function () {
+            'use strict';
+            window.addEventListener('load', function () {
+                // Get the forms we want to add validation styles to
+                var forms = document.getElementsByClassName('needs-validation');
+                // Loop over them and prevent submission
+                var validation = Array.prototype.filter.call(forms, function (form) {
+                    form.addEventListener('submit', function (event) {
+                        if (form.checkValidity() === false) {
+                            event.preventDefault();
+                            event.stopPropagation();
+                        }
+                        form.classList.add('was-validated');
+                    }, false);
+                });
+            }, false);
+        })();
+    </script>
+}

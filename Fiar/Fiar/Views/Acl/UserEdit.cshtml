@@ -1,0 +1,115 @@
+﻿@model Fiar.ViewModels.Acl.UserProfileViewModel
+
+@{
+    ViewData["Title"] = "ACL";
+}
+
+<div class="text-center">
+    <h1 class="display-4">USER EDIT (@Model.Username)</h1>
+</div>
+
+<div class="container">
+    @if (ViewData["ufeedback_failure"] != null)
+    {
+        <div>@ViewData["ufeedback_failure"]</div>
+    }
+    <h2 class="text-center">Edit User Profile</h2>
+    <form asp-controller="Acl" asp-action="UserEditProfileDataRequest" class="needs-validation" novalidate>
+        <input asp-for="Id" type="hidden" value="@Model?.Id" readonly>
+        <div class="form-group">
+            <label asp-for="Username">Username:</label>
+            <input asp-for="Username" type="text" maxlength="@Fiar.UserDataModel.Username_MaxLength" class="form-control" placeholder="Enter username" value="@Model?.Username" readonly>
+        </div>
+        <div class="form-group">
+            <label asp-for="Email">Email:</label>
+            <input asp-for="Email" type="email" maxlength="@Fiar.UserDataModel.Email_MaxLength" class="form-control" placeholder="Enter email" value="@Model?.Email" required>
+            <div class="valid-feedback">Valid.</div>
+            <div class="invalid-feedback">Please check again this field.</div>
+        </div>
+        <div class="form-group">
+            <label asp-for="Nickname">Nickname:</label>
+            <input asp-for="Nickname" type="text" maxlength="@Fiar.UserDataModel.Nickname_MaxLength" class="form-control" placeholder="Enter nickname" value="@Model?.Nickname" required>
+            <div class="valid-feedback">Valid.</div>
+            <div class="invalid-feedback">Please check again this field.</div>
+        </div>
+        @foreach (KeyValuePair<string, bool> role in Model.RoleListView)
+        {
+            <div class="form-group form-check custom-control custom-checkbox margin-bottom-30">
+                <input class="custom-control-input" type="checkbox" name="selectedRoles" id="role-checkbox-@role.Key" value="@role.Key" @{if (role.Value) { <text>checked</text> } }>
+                <label for="role-checkbox-@role.Key" class="custom-control-label">@role.Key</label>
+            </div>
+        }
+        <button type="submit" class="btn btn-color-dark d-block mx-auto">Submit</button>
+    </form>
+</div>
+
+<div class="container">
+    <h2 class="text-center">Edit User Password</h2>
+    <form asp-controller="Acl" asp-action="UserEditProfilePasswordRequest" class="needs-validation" novalidate>
+        <input asp-for="Id" type="hidden" value="@Model?.Id" readonly>
+        <div class="form-group margin-bottom-30">
+            <label asp-for="CurrentPassword">Current Password:</label>
+            <input asp-for="CurrentPassword" type="password" maxlength="@Fiar.UserDataModel.Password_MaxLength" class="form-control" placeholder="Enter password" required>
+            <div class="valid-feedback">Valid.</div>
+            <div class="invalid-feedback">Please check again this field.</div>
+        </div>
+        <div class="form-group margin-bottom-30">
+            <label asp-for="NewPassword">New Password:</label>
+            <input asp-for="NewPassword" type="password" maxlength="@Fiar.UserDataModel.Password_MaxLength" class="form-control" placeholder="Enter password" required>
+            <div class="valid-feedback">Valid.</div>
+            <div class="invalid-feedback">Please check again this field.</div>
+        </div>
+        <div class="form-group margin-bottom-30">
+            <label for="confirm-password">Confirm Password:</label>
+            <input id="confirm-password" type="password" maxlength="@Fiar.UserDataModel.Password_MaxLength" class="form-control" placeholder="Enter password" required>
+            <div class="valid-feedback">Valid.</div>
+            <div id="confirm-password-feedback" class="valid-feedback display-block"></div>
+            <div class="invalid-feedback">Please check again this field.</div>
+        </div>
+        <button id="password-submit-btn" type="submit" class="btn btn-color-dark d-block mx-auto">Submit</button>
+    </form>
+</div>
+
+<a asp-area="" asp-controller="Acl" asp-action="Index" class="btn btn-color-dark-nobg d-block mx-auto margin-top-50">Go Back</a>
+
+@section Scripts{
+    <script>
+        // Disable form submissions if there are invalid fields
+        (function () {
+            'use strict';
+            window.addEventListener('load', function () {
+                // Get the forms we want to add validation styles to
+                var forms = document.getElementsByClassName('needs-validation');
+                // Loop over them and prevent submission
+                var validation = Array.prototype.filter.call(forms, function (form) {
+                    form.addEventListener('submit', function (event) {
+                        if (form.checkValidity() === false) {
+                            event.preventDefault();
+                            event.stopPropagation();
+                        }
+                        form.classList.add('was-validated');
+                    }, false);
+                });
+            }, false);
+        })();
+
+        $(document).ready(function () {
+            $('#password-submit-btn').prop('disabled', true);
+
+            // Confirm password matching
+            $('#NewPassword, #confirm-password').on('keyup', function () {
+                if ($('#NewPassword').val() == $('#confirm-password').val()) {
+                    $('#confirm-password-feedback').html('Matching.');
+                    $('#password-submit-btn').prop('disabled', false);
+                    $('#confirm-password-feedback').removeClass("invalid-feedback");
+                    $('#confirm-password-feedback').addClass("valid-feedback");
+                } else {
+                    $('#confirm-password-feedback').html('Not Matching.');
+                    $('#password-submit-btn').prop('disabled', true);
+                    $('#confirm-password-feedback').removeClass("valid-feedback");
+                    $('#confirm-password-feedback').addClass("invalid-feedback");
+                }
+            });
+        });
+    </script>
+}

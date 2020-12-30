@@ -1,0 +1,194 @@
+﻿@{
+    ViewData["Title"] = "Game";
+}
+
+<div class="text-center">
+    <h1 class="display-4">GAME MATCH</h1>
+</div>
+<div id="game-index-container" class="container-fluid">
+    <div id="game-turn-modal" class="game-overlay-modal display-none">
+        <div class="mid">
+            <b>YOUR TURN</b>
+        </div>
+    </div>
+    <div id="game-victory-modal" class="game-overlay-modal display-none">
+        <div class="mid">
+            <b></b>
+            <a class="btn btn-dark" asp-area="" asp-controller="Lobby" asp-action="Index">BACK TO LOBBY</a>
+        </div>
+    </div>
+    <strong id="player-label"><span class="p1">...</span> -VS- <span class="p2">...</span></strong>
+    <div class="row">
+        <div class="col-xl-9">
+            <h2 class="text-center">Game Board</h2>
+            <div class="gameplay-container">
+                <table id="gameplay-table">
+                    <tbody>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        <div class="col-xl-3">
+            <h2 class="text-center">Chat</h2>
+            <div class="container">
+                <div class="row">
+                    <div class="col-8">
+                        <input type="text" class="form-control" id="chat-message-input" maxlength="100" placeholder="Enter message" />
+                    </div>
+                    <div class="col-4">
+                        <input type="button" class="btn btn-light" id="chat-send-btn" value="Send Message" />
+                    </div>
+                </div>
+            </div>
+            <div class="col-12">
+                <ul id="chat-message-list">
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts{
+    <script>
+        "use strict";
+
+        var currentPlayerType = -1;
+
+        // Disable send button until connection is established
+        document.getElementById('chat-send-btn').disabled = true;
+
+        // Create a new connection
+        var connection = new signalR.HubConnectionBuilder().withUrl("/gamehub").build();
+        // Start the connection
+        connection.start().then(function () {
+            // Successfully connected
+            document.getElementById('chat-send-btn').disabled = false;
+        }).catch(function (err) {
+            // Failed to connect
+            console.error(err.toString());
+            window.alert = function () { };
+            window.location.href = "@(WebRoutes.Lobby)";
+            return;
+        });
+        // On disconnect
+        connection.onclose(function () {
+            window.alert = function () { };
+            // TODO - uncomment
+            //window.location.href = "@(WebRoutes.Lobby)";
+        });
+
+        $(document).ready(function () {
+            // ------------------------------
+            // Connection Events
+
+            // Render game board
+            connection.on("@nameof(IGameClient.RenderBoard)", function (board) {
+                let toAppend = "";
+                for (let y = 0; y < board.length; ++y) {
+                    toAppend += '<tr>';
+                    for (let x = 0; x < board[0].length; ++x) {
+                        if (board[y][x] == @((int)GameBoardCellType.PlayerOne)) {
+                            toAppend += '<td class="p1" data-row="' + y + '" data-column="' + x + '"><div><i class="fas fa-times"></i></div></td>';
+                        } else if (board[y][x] == @((int)GameBoardCellType.PlayerTwo)) {
+                            toAppend += '<td class="p2" data-row="' + y + '" data-column="' + x + '"><div><i class="far fa-circle"></i></div></td>';
+                        } else if (board[y][x] == @((int)GameBoardCellType.PlayerOneHighlighted)) {
+                            toAppend += '<td class="p1h" data-row="' + y + '" data-column="' + x + '"><div><i class="fas fa-times"></i></div></td>';
+                        } else if (board[y][x] == @((int)GameBoardCellType.PlayerTwoHighlighted)) {
+                            toAppend += '<td class="p2h" data-row="' + y + '" data-column="' + x + '"><div><i class="far fa-circle"></i></div></td>';
+                        } else {
+                            toAppend += '<td class="empty" data-row="' + y + '" data-column="' + x + '"><div></div></td>';
+                        }
+                    }
+                    toAppend += '</tr>';
+                }
+                $('#gameplay-table tbody').empty();
+                $('#gameplay-table tbody').append(toAppend);
+            });
+
+            // Update players
+            connection.on("@nameof(IGameClient.UpdatePlayers)", function (playerOneObj, playerTwoObj) {
+                if (playerOneObj != null) {
+                    $('#player-label .p1').html(playerOneObj.nickname);
+
+                    if (playerOneObj.connectionId == connection.connectionId) {
+                        currentPlayerType = @((int)PlayerType.PlayerOne);
+                    }
+                }
+                if (playerTwoObj != null) {
+                    $('#player-label .p2').html(playerTwoObj.nickname);
+
+                    if (playerTwoObj.connectionId == connection.connectionId) {
+                        currentPlayerType = @((int)PlayerType.PlayerTwo);
+                    }
+                }
+            });
+
+            // Next turn
+            connection.on("@nameof(IGameClient.Turn)", function (playerType) {
+                if (playerType == @((int)PlayerType.PlayerTwo)) {
+                    $('#player-label .p1').removeClass('--turn');
+                    $('#player-label .p2').addClass('--turn');
+                } else {
+                    $('#player-label .p2').removeClass('--turn');
+                    $('#player-label .p1').addClass('--turn');
+                }
+
+                if (playerType == currentPlayerType) {
+                    $('#game-turn-modal').removeClass('display-none');
+                    setTimeout(function () { $('#game-turn-modal').addClass('display-none'); }, 2500);
+                }
+            });
+
+            // On victory
+            connection.on("@nameof(IGameClient.Victory)", function (playerType) {
+                if (playerType == currentPlayerType) {
+                    $('#game-victory-modal .mid b').text("YOU WON");
+                } else {
+                    $('#game-victory-modal .mid b').text("YOU LOST");
+                }
+                $('#game-victory-modal').removeClass('display-none');
+            });
+
+            // On concede
+            connection.on("@nameof(IGameClient.Concede)", function () {
+                $('#game-victory-modal .mid b').text("THE OPPONENT HAS DISCONNECTED");
+                $('#game-victory-modal').removeClass('display-none');
+            });
+
+            // Receive chat message
+            connection.on("@nameof(IGameClient.ReceiveChatMessage)", function (nickname, message) {
+                let msg = message.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+                let date = new Date();
+
+                $('#chat-message-list').prepend(
+                    '<li>' + nickname + ' says <span class="time">(' + date.getHours() + ':' + date.getMinutes() + ')</span><span class="message">' + msg + '</span></li>'
+                );
+                if ($('#chat-message-list li').length > 10)
+                    $('#chat-message-list li').last().remove();
+            });
+
+            // ------------------------------
+            // Client Events
+
+            // Send chat message
+            $(document).on('click', '#chat-send-btn', function (event) {
+                let message = $('#chat-message-input').val();
+                connection.invoke("@nameof(GameHub.SendChatMessage)", message).catch(function (err) {
+                    return console.error(err.toString());
+                });
+                $('#chat-message-input').val("");
+                event.preventDefault();
+            });
+
+            // On cell click
+            $(document).on('click', '#gameplay-table td', function (event) {
+                let row = $(this).attr('data-row');
+                let column = $(this).attr('data-column');
+                connection.invoke("@nameof(GameHub.CellClick)", parseInt(row), parseInt(column)).catch(function (err) {
+                    return console.error(err.toString());
+                });
+                event.preventDefault();
+            });
+        });
+    </script>
+}
