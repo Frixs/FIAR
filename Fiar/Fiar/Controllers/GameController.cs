@@ -85,6 +85,45 @@ namespace Fiar
         }
 
         /// <summary>
+        /// list of user's games
+        /// </summary>
+        [Route("my")]
+        public async Task<IActionResult> My()
+        {
+            // Get user by the claims
+            var user = await mUserManager.GetUserAsync(HttpContext.User);
+            if (user == null)
+                return Redirect(WebRoutes.Login);
+
+            var participations = mContext.GameParticipants.Where(o => o.Game.Result != GameResult.None && o.UserId.Equals(user.Id))
+                .Include(o => o.Game)
+                .OrderByDescending(o => o.GameId)
+                .Take(10)
+                .ToList();
+
+            var result = new MyGamesViewModel();
+            result.MyGames = new List<MyGameDataViewModel>();
+            result.TotalWins = mContext.GameParticipants
+                .Where(o => ((o.Game.Result == GameResult.PlayerOneWon && o.Type == PlayerType.PlayerOne) || (o.Game.Result == GameResult.PlayerTwoWon && o.Type == PlayerType.PlayerTwo)) && o.UserId.Equals(user.Id))
+                .Count();
+            result.TotalLosses = mContext.GameParticipants
+                .Where(o => o.Game.Result != GameResult.None && o.UserId.Equals(user.Id))
+                .Count() - result.TotalWins;
+
+            foreach (var p in participations)
+            {
+                result.MyGames.Add(new MyGameDataViewModel
+                {
+                    GameId = p.Game.Id,
+                    Victory = p.Type == PlayerType.PlayerTwo ? p.Game.Result == GameResult.PlayerTwoWon : p.Game.Result == GameResult.PlayerOneWon,
+                    Title = $"Game {p.Game.Id}"
+                });
+            }
+
+            return View(result);
+        }
+
+        /// <summary>
         /// Game replay page
         /// </summary>
         [Route("replay")]
@@ -162,12 +201,12 @@ namespace Fiar
                 InProgress = true
             };
 
+            // Save the board state
+            boardHistory.Add(gameSession.Board.Select(a => a.ToArray()).ToArray());
+
             // Generate gameplay
             foreach (var m in moves)
             {
-                // Save the board state
-                boardHistory.Add(gameSession.Board);
-
                 // If the current player is not set yet...
                 if (gameSession.CurrentPlayer == null)
                     // Set it then
@@ -178,7 +217,16 @@ namespace Fiar
 
                 // Check victory conditions (only the current player can win)
                 if (gameSession.CheckVictory(m.PosY, m.PosX))
+                {
+                    // Save the board state
+                    boardHistory.Add(gameSession.Board.Select(a => a.ToArray()).ToArray());
                     break;
+                }
+                else
+                {
+                    // Save the board state
+                    boardHistory.Add(gameSession.Board.Select(a => a.ToArray()).ToArray());
+                }
 
                 // Check for expanding the board
                 gameSession.TryExpandBoard(m.PosY, m.PosX);

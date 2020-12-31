@@ -1,5 +1,5 @@
 ﻿@{
-    ViewData["Title"] = "Game";
+    ViewData["Title"] = "Game Replay";
 }
 
 <div class="text-center">
@@ -9,6 +9,7 @@
     <strong id="player-label"><span class="p1">...</span> -VS- <span class="p2">...</span></strong>
     <div class="row">
         <div class="col-12">
+            <a class="text-dark display-block text-center" asp-area="" asp-controller="Game" asp-action="My">GO BACK</a>
             <h2 class="text-center">Game Board</h2>
             <div class="gameplay-container">
                 <table id="gameplay-table" class="display-none">
@@ -42,9 +43,10 @@
                 data: { gid: @ViewData["replayGameId"] },
                 // Success
                 success: function (data) {
-                    console.log(data);
-                    $('#loading-spinner').remove();
-                    $('#gameplay-table').removeClass('display-none');
+                    $('#player-label .p1').html(data.playerOne);
+                    $('#player-label .p2').html(data.playerTwo);
+
+                    startReplayFunction(data.boardHistory, 0);
                 },
                 // Error
                 error: function (data) {
@@ -58,6 +60,48 @@
                     }
                 }
             });
+        }
+
+        // FUNCTION
+        // Starts animation the board history to the user
+        function startReplayFunction(boardHistory, i) {
+            if (boardHistory.length > i) {
+                setTimeout(function () {
+                    if (i == 0) {
+                        $('#loading-spinner').remove();
+                        $('#gameplay-table').removeClass('display-none');
+                    }
+
+                    renderBoardFunction(boardHistory[i]);
+                    ++i;
+                    startReplayFunction(boardHistory, i);
+                }, 2000);
+            }
+        }
+
+        // FUNCTION
+        // Render board
+        function renderBoardFunction(board) {
+            let toAppend = "";
+            for (let y = 0; y < board.length; ++y) {
+                toAppend += '<tr>';
+                for (let x = 0; x < board[0].length; ++x) {
+                    if (board[y][x] == @((int)GameBoardCellType.PlayerOne)) {
+                        toAppend += '<td class="p1" data-row="' + y + '" data-column="' + x + '"><div><i class="fas fa-times"></i></div></td>';
+                    } else if (board[y][x] == @((int)GameBoardCellType.PlayerTwo)) {
+                        toAppend += '<td class="p2" data-row="' + y + '" data-column="' + x + '"><div><i class="far fa-circle"></i></div></td>';
+                    } else if (board[y][x] == @((int)GameBoardCellType.PlayerOneHighlighted)) {
+                        toAppend += '<td class="p1h" data-row="' + y + '" data-column="' + x + '"><div><i class="fas fa-times"></i></div></td>';
+                    } else if (board[y][x] == @((int)GameBoardCellType.PlayerTwoHighlighted)) {
+                        toAppend += '<td class="p2h" data-row="' + y + '" data-column="' + x + '"><div><i class="far fa-circle"></i></div></td>';
+                    } else {
+                        toAppend += '<td class="empty" data-row="' + y + '" data-column="' + x + '"><div></div></td>';
+                    }
+                }
+                toAppend += '</tr>';
+            }
+            $('#gameplay-table tbody').empty();
+            $('#gameplay-table tbody').append(toAppend);
         }
     </script>
 }

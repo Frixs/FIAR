@@ -1,0 +1,45 @@
+﻿@model Fiar.ViewModels.MyGamesViewModel
+
+@{
+    ViewData["Title"] = "My Games";
+}
+
+<div class="text-center">
+    <h1 class="display-4">MY GAMES</h1>
+</div>
+<div id="game-my-container" class="container-fluid">
+    <strong id="player-label">Total victories: <span class="p1">@Model.TotalWins</span>, Total losses: <span class="p2">@Model.TotalLosses</span></strong>
+    <div class="row">
+        <div class="col-12">
+            <h2 class="text-center">LAST 10 GAME PLAYS</h2>
+            <div class="container">
+                <div class="row justify-content-center">
+                    <div class="col-auto">
+                        <table class="table table-responsive">
+                            <tbody>
+                                @foreach (var game in Model.MyGames)
+                                {
+                                    <tr>
+                                        <td>@game.Title</td>
+                                        <td>@( game.Victory ? "Victory" : "Loss" )</td>
+                                        <td><a class="btn btn-warning" asp-area="" asp-controller="Game" asp-action="Replay" asp-route-gid="@game.GameId">REPLAY</a></td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts{
+    <script>
+        "use strict";
+
+        $(document).ready(function () {
+
+        });
+    </script>
+}

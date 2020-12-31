@@ -1,0 +1,22 @@
+﻿@import "../Utils/module";
+
+#game-my-container {
+    #player-label {
+        display: block;
+        text-align: center;
+
+        .p1 {
+            color: blue;
+        }
+
+        .p2 {
+            color: red;
+        }
+    }
+
+    table {
+        td {
+            vertical-align: middle;
+        }
+    }
+}

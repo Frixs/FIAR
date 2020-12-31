@@ -300,7 +300,10 @@ namespace Fiar
             }
 
             // Check victory conditions (only the current player can win)
-            if (game.CheckVictory(row, column))
+            bool victory = game.CheckVictory(row, column);
+
+            // On victory process
+            if (victory)
             {
                 // Update result in DB
                 if (game.CurrentPlayer.Id.Equals(game.PlayerTwo.Id))
@@ -320,8 +323,6 @@ namespace Fiar
                 mLogger.LogDebugSource($"Game {game.Id} has ended!");
 
                 await mGameRepository.RemoveItemAsync(game);
-
-                return;
             }
 
             // Add the turn into DB
@@ -334,6 +335,10 @@ namespace Fiar
                 RecordedAt = DateTime.Now
             });
             mContext.SaveChanges();
+
+            // If the game already has a winner, we do need to continue
+            if (victory)
+                return;
 
             // Check for expanding the board
             if (game.TryExpandBoard(row, column))
