@@ -1,4 +1,5 @@
 ﻿using Fiar.Attributes;
+using System;
 
 namespace Fiar
 {
@@ -57,6 +58,12 @@ namespace Fiar
         /// </summary>
         [ValidateIgnore]
         public int PosY { get; set; }
+
+        /// <summary>
+        /// Datetime of the recording
+        /// </summary>
+        [ValidateIgnore]
+        public DateTime RecordedAt { get; set; }
 
         #endregion
     }

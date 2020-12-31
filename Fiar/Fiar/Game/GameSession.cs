@@ -1,4 +1,6 @@
-﻿namespace Fiar
+﻿using System;
+
+namespace Fiar
 {
     /// <summary>
     /// Running game session context
@@ -7,8 +9,10 @@
     {
         #region Constants
 
-        public const int NumberOfRows = 20;
-        public const int NumberOfColumns = 20;
+        public const int StartingNumberOfRows = 15;
+        public const int MaxNumberOfRows = 75;
+        public const int StartingNumberOfColumns = 15;
+        public const int MaxNumberOfColumns = 75;
         public const int ChainLengthToWin = 5;
 
         #endregion
@@ -125,6 +129,138 @@
         }
 
         /// <summary>
+        /// If the position is in range of expansion, the board will expand the size
+        /// </summary>
+        /// <param name="row">The player's turn row</param>
+        /// <param name="column">The player's turn column</param>
+        /// <returns>TRUE on success, FALSE otherwise</returns>
+        public bool TryExpandBoard(int row, int column)
+        {
+            bool result = false;
+
+            // Expand to top
+            if (Board.Length < MaxNumberOfRows && row - ChainLengthToWin < 0)
+            {
+                System.Diagnostics.Debug.WriteLine("top");
+                // Get the new size to expand to
+                var additionalSize = 0;
+                for (int i = 0; i < Math.Abs(row - ChainLengthToWin); ++i)
+                {
+                    if (Board.Length + additionalSize + 1 > MaxNumberOfRows)
+                        break;
+                    ++additionalSize;
+                }
+
+                // Create a new expanded board
+                GameBoardCellType[][] newBoard = new GameBoardCellType[Board.Length + additionalSize][];
+                for (int y = 0; y < Board.Length + additionalSize; ++y)
+                {
+                    newBoard[y] = new GameBoardCellType[Board[0].Length];
+                    for (int x = 0; x < Board[0].Length; ++x)
+                    {
+                        if (y >= additionalSize)
+                            newBoard[y][x] = Board[y - additionalSize][x];
+                        else
+                            newBoard[y][x] = GameBoardCellType.Empty;
+                    }
+                }
+                // Replace the old board with the new one
+                Board = newBoard;
+                result = true;
+            }
+            // Expand to left
+            if (Board[0].Length < MaxNumberOfColumns && column - ChainLengthToWin < 0)
+            {
+                System.Diagnostics.Debug.WriteLine("left");
+                // Get the new size to expand to
+                var additionalSize = 0;
+                for (int i = 0; i < Math.Abs(column - ChainLengthToWin); ++i)
+                {
+                    if (Board[0].Length + additionalSize + 1 > MaxNumberOfColumns)
+                        break;
+                    ++additionalSize;
+                }
+                
+                // Create a new expanded board
+                GameBoardCellType[][] newBoard = new GameBoardCellType[Board.Length][];
+                for (int y = 0; y < Board.Length; ++y)
+                {
+                    newBoard[y] = new GameBoardCellType[Board[0].Length + additionalSize];
+                    for (int x = 0; x < Board[0].Length + additionalSize; ++x)
+                    {
+                        if (x >= additionalSize)
+                            newBoard[y][x] = Board[y][x - additionalSize];
+                        else
+                            newBoard[y][x] = GameBoardCellType.Empty;
+                    }
+                }
+                // Replace the old board with the new one
+                Board = newBoard;
+                result = true;
+            }
+            // Expand to bottom
+            if (Board.Length < MaxNumberOfRows && row + ChainLengthToWin >= Board.Length)
+            {
+                // Get the new size to expand to
+                var additionalSize = 0;
+                for (int i = 0; i < row + ChainLengthToWin + 1 - Board.Length; ++i)
+                {
+                    if (Board.Length + additionalSize + 1 > MaxNumberOfRows)
+                        break;
+                    ++additionalSize;
+                }
+                
+                // Create a new expanded board
+                GameBoardCellType[][] newBoard = new GameBoardCellType[Board.Length + additionalSize][];
+                for (int y = 0; y < Board.Length + additionalSize; ++y)
+                {
+                    newBoard[y] = new GameBoardCellType[Board[0].Length];
+                    for (int x = 0; x < Board[0].Length; ++x)
+                    {
+                        if (y < Board.Length)
+                            newBoard[y][x] = Board[y][x];
+                        else
+                            newBoard[y][x] = GameBoardCellType.Empty;
+                    }
+                }
+                // Replace the old board with the new one
+                Board = newBoard;
+                result = true;
+            }
+            // Expand to right
+            if (Board[0].Length < MaxNumberOfColumns && column + ChainLengthToWin >= Board[0].Length)
+            {
+                // Get the new size to expand to
+                var additionalSize = 0;
+                for (int i = 0; i < column + ChainLengthToWin + 1 - Board[0].Length; ++i)
+                {
+                    if (Board[0].Length + additionalSize + 1 > MaxNumberOfColumns)
+                        break;
+                    ++additionalSize;
+                }
+
+                // Create a new expanded board
+                GameBoardCellType[][] newBoard = new GameBoardCellType[Board.Length][];
+                for (int y = 0; y < Board.Length; ++y)
+                {
+                    newBoard[y] = new GameBoardCellType[Board[0].Length + additionalSize];
+                    for (int x = 0; x < Board[0].Length + additionalSize; ++x)
+                    {
+                        if (x < Board[0].Length)
+                            newBoard[y][x] = Board[y][x];
+                        else
+                            newBoard[y][x] = GameBoardCellType.Empty;
+                    }
+                }
+                // Replace the old board with the new one
+                Board = newBoard;
+                result = true;
+            }
+
+            return result;
+        }
+
+        /// <summary>
         /// Check the victory conditions after player's turn
         /// </summary>
         /// <param name="row">The player's turn row</param>
@@ -191,12 +327,12 @@
         /// </summary>
         private void PopulateBoard()
         {
-            Board = new GameBoardCellType[NumberOfRows][];
+            Board = new GameBoardCellType[StartingNumberOfRows][];
 
-            for (int y = 0; y < NumberOfRows; ++y)
+            for (int y = 0; y < StartingNumberOfRows; ++y)
             {
-                Board[y] = new GameBoardCellType[NumberOfColumns];
-                for (int x = 0; x < NumberOfColumns; ++x)
+                Board[y] = new GameBoardCellType[StartingNumberOfColumns];
+                for (int x = 0; x < StartingNumberOfColumns; ++x)
                 {
                     Board[y][x] = GameBoardCellType.Empty;
                 }
@@ -230,7 +366,7 @@
             {
                 var columnToCheck = column + k;
 
-                if (columnToCheck >= NumberOfColumns)
+                if (columnToCheck >= Board[0].Length)
                     break;
                 if (Board[row][columnToCheck] != player)
                     break;
@@ -276,7 +412,7 @@
             {
                 var rowToCheck = row + k;
 
-                if (rowToCheck >= NumberOfRows)
+                if (rowToCheck >= Board.Length)
                     break;
                 if (Board[rowToCheck][column] != player)
                     break;
@@ -330,7 +466,7 @@
                 var rowToCheck = row + k;
                 var columnToCheck = column + k;
 
-                if (rowToCheck >= NumberOfRows || columnToCheck >= NumberOfColumns)
+                if (rowToCheck >= Board.Length || columnToCheck >= Board[0].Length)
                     break;
                 if (Board[rowToCheck][columnToCheck] != player)
                     break;
@@ -356,7 +492,7 @@
                 var rowToCheck = row + k;
                 var columnToCheck = column - k;
 
-                if (rowToCheck >= NumberOfRows || columnToCheck < 0)
+                if (rowToCheck >= Board.Length || columnToCheck < 0)
                     break;
                 if (Board[rowToCheck][columnToCheck] != player)
                     break;
@@ -371,7 +507,7 @@
                 var rowToCheck = row - k;
                 var columnToCheck = column + k;
 
-                if (rowToCheck < 0 || columnToCheck >= NumberOfColumns)
+                if (rowToCheck < 0 || columnToCheck >= Board[0].Length)
                     break;
                 if (Board[rowToCheck][columnToCheck] != player)
                     break;

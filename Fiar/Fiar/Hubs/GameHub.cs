@@ -330,9 +330,14 @@ namespace Fiar
                 GameId = dbGame.Id,
                 PosX = column,
                 PosY = row,
-                Type = game.CurrentPlayer.Type
+                Type = game.CurrentPlayer.Type,
+                RecordedAt = DateTime.Now
             });
             mContext.SaveChanges();
+
+            // Check for expanding the board
+            if (game.TryExpandBoard(row, column))
+                await RenderBoardCall(game);
 
             // Move to the next turn
             game.MoveTurnPointerToNextPlayer();
