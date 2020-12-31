@@ -81,8 +81,7 @@
         // On disconnect
         connection.onclose(function () {
             window.alert = function () { };
-            // TODO - uncomment
-            //window.location.href = "@(WebRoutes.Lobby)";
+            window.location.href = "@(WebRoutes.Lobby)";
         });
 
         $(document).ready(function () {

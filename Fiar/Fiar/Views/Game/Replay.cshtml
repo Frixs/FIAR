@@ -1,0 +1,31 @@
+﻿@{
+    ViewData["Title"] = "Game";
+}
+
+<div class="text-center">
+    <h1 class="display-4">GAME REPLAY</h1>
+</div>
+<div id="game-replay-container" class="container-fluid">
+    <strong id="player-label"><span class="p1">...</span> -VS- <span class="p2">...</span></strong>
+    <div class="row">
+        <div class="col-12">
+            <h2 class="text-center">Game Board</h2>
+            <div class="gameplay-container">
+                <table id="gameplay-table">
+                    <tbody>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts{
+    <script>
+        "use strict";
+
+        $(document).ready(function () {
+            // TODO - replay
+        });
+    </script>
+}

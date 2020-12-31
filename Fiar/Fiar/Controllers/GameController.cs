@@ -79,6 +79,15 @@ namespace Fiar
             return View();
         }
 
+        /// <summary>
+        /// Game replay page
+        /// </summary>
+        [Route("replay")]
+        public IActionResult Replay()
+        {
+            return View();
+        }
+
         #endregion
 
         #region Requests
