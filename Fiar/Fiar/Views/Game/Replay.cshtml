@@ -11,10 +11,13 @@
         <div class="col-12">
             <h2 class="text-center">Game Board</h2>
             <div class="gameplay-container">
-                <table id="gameplay-table">
+                <table id="gameplay-table" class="display-none">
                     <tbody>
                     </tbody>
                 </table>
+                <div id="loading-spinner" class="spinner-grow" style="display:block;margin:auto;" role="status">
+                    <span class="sr-only">Loading...</span>
+                </div>
             </div>
         </div>
     </div>
@@ -25,7 +28,36 @@
         "use strict";
 
         $(document).ready(function () {
-            // TODO - replay
+            getDataFunction();
         });
+
+        // FUNCTION
+        // Update online users
+        function getDataFunction() {
+            // AJAX POST
+            $.ajax({
+                url: "@WebRoutes.GetGameReplayDataGameRequest",
+                type: "POST",
+                contentType: 'application/x-www-form-urlencoded',
+                data: { gid: @ViewData["replayGameId"] },
+                // Success
+                success: function (data) {
+                    console.log(data);
+                    $('#loading-spinner').remove();
+                    $('#gameplay-table').removeClass('display-none');
+                },
+                // Error
+                error: function (data) {
+                    // If unauthorized error...
+                    if (data.status == 401) {
+                        window.alert = function () { };
+                        window.location.href = "@(WebRoutes.Login)";
+                    } else {
+                        window.alert = function () { };
+                        window.location.href = "@(WebRoutes.Error500)";
+                    }
+                }
+            });
+        }
     </script>
 }

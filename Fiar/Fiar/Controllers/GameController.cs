@@ -4,6 +4,11 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using System;
+using Microsoft.EntityFrameworkCore;
+using System.Linq;
+using System.Threading.Tasks;
+using System.Collections.Generic;
+using Fiar.ViewModels;
 
 namespace Fiar
 {
@@ -83,14 +88,108 @@ namespace Fiar
         /// Game replay page
         /// </summary>
         [Route("replay")]
-        public IActionResult Replay()
+        public IActionResult Replay(long gid)
         {
+            ViewData["replayGameId"] = gid;
             return View();
         }
 
         #endregion
 
         #region Requests
+
+        /// <summary>
+        /// Get replay data based on game ID
+        /// </summary>
+        /// <param name="gid">The game ID</param>
+        [HttpPost]
+        [Route(WebRoutes.GetGameReplayDataGameRequest)]
+        public async Task<GameReplayDataViewModel> GetGameReplayDataRequestAsync([Bind("gid")] long gid)
+        {
+            // Get user by the claims
+            var user = await mUserManager.GetUserAsync(HttpContext.User);
+            if (user == null)
+                return null;
+
+            bool isAllowedToReplay = false;
+            GameReplayDataViewModel result = new GameReplayDataViewModel();
+            Player playerOne = null;
+            Player playerTwo = null;
+            List<GameBoardCellType[][]> boardHistory = new List<GameBoardCellType[][]>();
+
+            // Get the game
+            var game = mContext.Games.Find(gid);
+            if (game == null)
+                return null;
+
+            // Get the participants
+            var participants = mContext.GameParticipants
+                .Where(o => o.GameId == gid)
+                .Include(o => o.User)
+                .ToList();
+            foreach (var p in participants)
+            {
+                if (p.Type == PlayerType.PlayerTwo)
+                {
+                    playerTwo = Player.Convert(p.User, null, PlayerType.PlayerTwo);
+                    result.PlayerTwo = p.User.Nickname;
+                }
+                else
+                {
+                    playerOne = Player.Convert(p.User, null, PlayerType.PlayerOne);
+                    result.PlayerOne = p.User.Nickname;
+                }
+
+                if (p.User.Id.Equals(user.Id))
+                    isAllowedToReplay = true;
+            }
+
+            // Check if the user is allowed to replay
+            if (!isAllowedToReplay)
+                return null;
+
+            // Get all game moves
+            var moves = mContext.GameMoves
+                .Where(o => o.GameId == gid)
+                .OrderBy(o => o.RecordedAt)
+                .ToList();
+
+            // Create replay game session
+            var gameSession = new GameSession(null, null)
+            {
+                PlayerOne = playerOne ?? new Player(PlayerType.PlayerOne) { Id = "id", ConnectionId = null, Nickname = "---" },
+                PlayerTwo = playerTwo ?? new Player(PlayerType.PlayerTwo) { Id = "id", ConnectionId = null, Nickname = "---" },
+                InProgress = true
+            };
+
+            // Generate gameplay
+            foreach (var m in moves)
+            {
+                // Save the board state
+                boardHistory.Add(gameSession.Board);
+
+                // If the current player is not set yet...
+                if (gameSession.CurrentPlayer == null)
+                    // Set it then
+                    gameSession.MoveTurnPointerToNextPlayer();
+
+                // Try to assign player turn into the board
+                gameSession.TryAssignPlayerToCell(m.PosY, m.PosX);
+
+                // Check victory conditions (only the current player can win)
+                if (gameSession.CheckVictory(m.PosY, m.PosX))
+                    break;
+
+                // Check for expanding the board
+                gameSession.TryExpandBoard(m.PosY, m.PosX);
+
+                // Move to the next turn
+                gameSession.MoveTurnPointerToNextPlayer();
+            }
+            result.BoardHistory = boardHistory;
+
+            return result;
+        }
 
         #endregion
     }

@@ -141,7 +141,6 @@ namespace Fiar
             // Expand to top
             if (Board.Length < MaxNumberOfRows && row - ChainLengthToWin < 0)
             {
-                System.Diagnostics.Debug.WriteLine("top");
                 // Get the new size to expand to
                 var additionalSize = 0;
                 for (int i = 0; i < Math.Abs(row - ChainLengthToWin); ++i)
@@ -171,7 +170,6 @@ namespace Fiar
             // Expand to left
             if (Board[0].Length < MaxNumberOfColumns && column - ChainLengthToWin < 0)
             {
-                System.Diagnostics.Debug.WriteLine("left");
                 // Get the new size to expand to
                 var additionalSize = 0;
                 for (int i = 0; i < Math.Abs(column - ChainLengthToWin); ++i)

@@ -84,5 +84,10 @@
         /// The route to the web request method
         /// </summary>
         public const string UserEditProfilePasswordAclRequest = "/request/acl/user/password/edit";
+
+        /// <summary>
+        /// The route to the web request method
+        /// </summary>
+        public const string GetGameReplayDataGameRequest = "/request/game/replay/data";
     }
 }
