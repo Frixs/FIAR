@@ -18,6 +18,11 @@
         /// <summary>
         /// The route to the web page
         /// </summary>
+        public const string UserEdit = "/user/edit";
+
+        /// <summary>
+        /// The route to the web page
+        /// </summary>
         public const string ConfigDump = "/config/dump";
 
         /// <summary>
@@ -74,6 +79,16 @@
         /// The route to the web request method
         /// </summary>
         public const string RegisterRequest = "/request/register";
+
+        /// <summary>
+        /// The route to the web request method
+        /// </summary>
+        public const string UserEditProfileDataRequest = "/request/user/profile/edit";
+
+        /// <summary>
+        /// The route to the web request method
+        /// </summary>
+        public const string UserEditProfilePasswordRequest = "/request/user/password/edit";
 
         /// <summary>
         /// The route to the web request method

@@ -1,5 +1,6 @@
-﻿using Fiar.ViewModels;
-using Ixs.DNA;
+﻿using Fiar.Attributes;
+using Fiar.ViewModels;
+using Fiar.ViewModels.Acl;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
@@ -96,12 +97,30 @@ namespace Fiar
         }
 
         /// <summary>
-        /// Login page
+        /// Register page
         /// </summary>
         [Route(WebRoutes.Register)]
         public IActionResult Register()
         {
             return View();
+        }
+
+        /// <summary>
+        /// User edit page
+        /// </summary>
+        [Authorize]
+        [Route(WebRoutes.UserEdit)]
+        public async Task<IActionResult> UserEdit()
+        {
+            // Get user by the claims
+            var user = await mUserManager.GetUserAsync(HttpContext.User);
+            if (user == null)
+                return Redirect(WebRoutes.Login);
+
+            var userView = GetUserEdit(user);
+            if (userView == null)
+                return Redirect(nameof(Index));
+            return View(userView);
         }
 
         /// <summary>
@@ -263,6 +282,136 @@ namespace Fiar
         {
             await HttpContext.SignOutAsync(IdentityConstants.ApplicationScheme);
             return RedirectToAction(nameof(Index));
+        }
+
+        /// <summary>
+        /// An edit user profile page request
+        /// </summary>
+        /// <param name="data">The user data</param>
+        [HttpPost]
+        [Authorize]
+        [ValidateAntiForgeryToken]
+        [Route(WebRoutes.UserEditProfileDataRequest)]
+        public async Task<IActionResult> UserEditProfileDataRequestAsync([Bind(
+            nameof(UserProfileViewModel.Nickname))] UserProfileViewModel data, string[] selectedRoles)
+        {
+            // If model binding is valid...
+            if (ModelState.IsValid)
+            {
+                // Get user by the claims
+                var user = await mUserManager.GetUserAsync(HttpContext.User);
+                if (user == null)
+                    return Redirect(WebRoutes.Login);
+
+                // Validate the model
+                var userToValidate = new UserDataModel
+                {
+                    Username = user.UserName,
+                    Email = user.Email,
+                    Nickname = data.Nickname
+                };
+                var validationResult = typeof(UserDataModel).GetAttribute<ValidableModelAttribute>().Validate(userToValidate);
+                if (validationResult.Succeeded)
+                {
+                    // Update edited fields
+                    user.UserName = userToValidate.Username;
+                    user.Email = userToValidate.Email;
+                    user.Nickname = userToValidate.Nickname;
+
+                    // Update
+                    var updateResult = await mUserManager.UpdateAsync(user);
+
+                    // If the user update was successful...
+                    if (updateResult.Succeeded)
+                    {
+                        // Log it
+                        mLogger.LogInformation($"User {user.UserName} has been updated!");
+
+                        // Go back to Index
+                        return RedirectToAction(nameof(Index));
+                    }
+                    else
+                    {
+                        ViewData["ufeedback_failure"] = updateResult.Errors.AggregateErrors();
+                    }
+                }
+                else
+                {
+                    ViewData["ufeedback_failure"] = validationResult.Errors.AggregateErrors();
+                }
+
+                // Go back to the view
+                return View(nameof(UserEdit), GetUserEdit(user));
+            }
+
+            // Go back to the page
+            return RedirectToAction(nameof(UserEdit));
+        }
+
+        /// <summary>
+        /// An edit user password page request
+        /// </summary>
+        /// <param name="data">The user data</param>
+        [HttpPost]
+        [Authorize]
+        [ValidateAntiForgeryToken]
+        [Route(WebRoutes.UserEditProfilePasswordRequest)]
+        public async Task<IActionResult> UserEditProfilePasswordRequestAsync([Bind(
+            nameof(UserProfileViewModel.Id) + "," +
+            nameof(UserProfileViewModel.CurrentPassword) + "," +
+            nameof(UserProfileViewModel.NewPassword))] UserProfileViewModel data)
+        {
+            // If model binding is valid...
+            if (ModelState.IsValid)
+            {
+                // Get user by the claims
+                var user = await mUserManager.GetUserAsync(HttpContext.User);
+                if (user == null)
+                    return Redirect(WebRoutes.Login);
+
+                // Attempt to commit changes to data store
+                var result = await mUserManager.ChangePasswordAsync(user, data.CurrentPassword, data.NewPassword);
+                if (result.Succeeded)
+                {
+                    // Log it
+                    mLogger.LogInformation($"User {user.UserName} has successfully changed password!");
+
+                    // Go back to page
+                    return RedirectToAction(nameof(Index));
+                }
+                else
+                {
+                    ViewData["ufeedback_failure"] = result.Errors.AggregateErrors();
+                }
+
+                // Go back to the view
+                return View(nameof(UserEdit), GetUserEdit(user));
+            }
+
+            // Go back to the page
+            return RedirectToAction(nameof(UserEdit));
+        }
+
+        #endregion
+
+        #region Helpers
+
+        /// <summary>
+        ///  Gets the user with all required data for edit forms
+        /// </summary>
+        /// <param name="user">The user DB</param>
+        /// <returns>The user view model</returns>
+        private UserProfileViewModel GetUserEdit(ApplicationUser user)
+        {
+            var userProfile = new UserProfileViewModel
+            {
+                Id = user.Id,
+                Username = user.UserName,
+                Email = user.Email,
+                Nickname = user.Nickname
+            };
+
+            return userProfile;
         }
 
         #endregion
