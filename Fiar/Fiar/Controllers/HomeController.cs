@@ -123,6 +123,25 @@ namespace Fiar
         }
 
         /// <summary>
+        /// ForgotPassword page
+        /// </summary>
+        [Route(WebRoutes.ResetPassword)]
+        public IActionResult ResetPassword(string uid, string ptoken)
+        {
+            // NOTE: Issue with URL decoding containing /s does not replace them
+            //       https://github.com/aspnet/Home/issues/2669
+            //
+            //       Manual fix here:
+            ptoken = ptoken.Replace("%2f", "/").Replace("%2F", "/");
+
+            return View(new ResetPasswordViewModel
+            {
+                Id = uid,
+                Token = ptoken
+            });
+        }
+
+        /// <summary>
         /// Resend confirmation email page
         /// </summary>
         [Route(WebRoutes.ResendVerificationEmail)]
@@ -533,8 +552,18 @@ namespace Fiar
             var user = mContext.Users.FirstOrDefault(o => o.UserName.Equals(data.UsernameOrEmail) || o.Email.Equals(data.UsernameOrEmail));
             if (user != null)
             {
-                // TODO send email - create reset link
-                //AppEmailSender.SendUserPasswordResetVerificationAsync(user.UserName, user.Email);
+                // Generate an email verification code
+                var passwordVerificationCode = await mUserManager.GeneratePasswordResetTokenAsync(user);
+                var confirmationUrl = $"{Request.Scheme}://" + Request.Host.Value + WebRoutes.ResetPassword.Replace("{uid}", HttpUtility.UrlEncode(user.Id)).Replace("{ptoken}", HttpUtility.UrlEncode(passwordVerificationCode));
+
+                // Email the user the verification code
+                await AppEmailSender.SendUserPasswordResetVerificationAsync(user.Email, confirmationUrl);
+
+                // Give feedback
+                ViewData["ufeedback_success"] = "Confirmation email has been send to your email address.";
+
+                // Go to view
+                return View(nameof(ForgotPassword), null);
             }
             else
             {
@@ -545,6 +574,53 @@ namespace Fiar
 
             // Go back to the view
             return View(nameof(ForgotPassword), data);
+        }
+
+        /// <summary>
+        /// An edit user password page request
+        /// </summary>
+        /// <param name="data">The user data</param>
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [Route(WebRoutes.ResetPassowrdRequest)]
+        public async Task<IActionResult> ResetPasswordRequestAsync([Bind(
+            nameof(ResetPasswordViewModel.Id) + "," +
+            nameof(ResetPasswordViewModel.Token) + "," +
+            nameof(ResetPasswordViewModel.NewPassword))] ResetPasswordViewModel model)
+        {
+            // If model binding is valid...
+            if (ModelState.IsValid)
+            {
+                // Verify if the ID matches
+                var user = await mUserManager.FindByIdAsync(model.Id);
+                if (user == null)
+                {
+                    // Go back to the page
+                    return RedirectToAction(nameof(Index));
+                }
+
+                // Attempt to commit changes to data store
+                var result = await mUserManager.ResetPasswordAsync(user, model.Token, model.NewPassword);
+                if (result.Succeeded)
+                {
+                    // Log it
+                    mLogger.LogInformation($"User {user.UserName} has successfully reset password!");
+
+                    // Go back to page
+                    return RedirectToAction(nameof(Login));
+                }
+                else
+                {
+                    ViewData["ufeedback_failure"] = result.Errors.AggregateErrors();
+                }
+
+                model.NewPassword = string.Empty;
+                // Go back to the view
+                return View(nameof(ResetPassword), model);
+            }
+
+            // Go back to the page
+            return RedirectToAction(nameof(Index));
         }
 
         #endregion

@@ -23,6 +23,11 @@
         /// <summary>
         /// The route to the web page
         /// </summary>
+        public const string ResetPassword = "/resetpassword/{uid}/{ptoken}";
+
+        /// <summary>
+        /// The route to the web page
+        /// </summary>
         public const string ResendVerificationEmail = "/resendconfirmationemail";
 
         /// <summary>
@@ -113,7 +118,12 @@
         /// <summary>
         /// The route to the web request method
         /// </summary>
-        public const string ForgetPassowrdRequest = "/request/user/password/reset";
+        public const string ForgetPassowrdRequest = "/request/user/password/forgot";
+
+        /// <summary>
+        /// The route to the web request method
+        /// </summary>
+        public const string ResetPassowrdRequest = "/request/user/password/reset";
 
         /// <summary>
         /// The route to the web request method

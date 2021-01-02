@@ -13,7 +13,7 @@ The project is developed according to the attached [assignment](/ASSIGNMENT.md).
 ---
 * an unlimited board
 * password strength evaluation
-* password reset using an e-mail (reset link)
+* password reset using an e-mail (reset link) + email verification
 * in-game chat
 * save games with all turns and allow replay
 
