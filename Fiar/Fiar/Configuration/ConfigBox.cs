@@ -46,14 +46,16 @@ namespace Fiar
 
         public string Configuration_DateTimeFormat_Standard => mConfiguration["Configuration:DateTimeFormat:Standard"] ?? "yyyy-MM-dd (HH:mm)";
 
-        #endregion
+        public bool Configuration_VerifyEmailRequired { get; private set; }
 
-        #region Constructor
+    #endregion
 
-        /// <summary>
-        /// Default constructor
-        /// </summary>
-        public ConfigBox(IConfiguration configuration)
+    #region Constructor
+
+    /// <summary>
+    /// Default constructor
+    /// </summary>
+    public ConfigBox(IConfiguration configuration)
         {
             mConfiguration = configuration ?? throw new ArgumentNullException(nameof(configuration));
             Load();
@@ -135,6 +137,9 @@ namespace Fiar
                     );
                 SetValue(nameof(Configuration_DateTimeFormat_Standard),
                     () => { if (Configuration_DateTimeFormat_Standard == null) throw new NullReferenceException("Null or empty!"); }
+                    );
+                SetValue(nameof(Configuration_VerifyEmailRequired),
+                    () => Configuration_VerifyEmailRequired = bool.Parse(mConfiguration["Configuration:VerifyEmailRequired"])
                     );
 
                 Console.WriteLine("=========================================================================================");

@@ -23,6 +23,16 @@
         /// <summary>
         /// The route to the web page
         /// </summary>
+        public const string ResendVerificationEmail = "/resendconfirmationemail";
+
+        /// <summary>
+        /// The route to the web page
+        /// </summary>
+        public const string VerifyEmail = "/verify/email/{uid}/{etoken}";
+
+        /// <summary>
+        /// The route to the web page
+        /// </summary>
         public const string UserEdit = "/user/edit";
 
         /// <summary>
@@ -84,6 +94,11 @@
         /// The route to the web request method
         /// </summary>
         public const string RegisterRequest = "/request/register";
+
+        /// <summary>
+        /// The route to the web request method
+        /// </summary>
+        public const string ResendVerificationEmailRequest = "/request/verify/email/resend";
 
         /// <summary>
         /// The route to the web request method

@@ -1,0 +1,36 @@
+﻿@model Fiar.Put_LoginCredentialsApiModel
+
+@{
+    ViewData["Title"] = "Verify Email - Resend";
+}
+<div class="text-center">
+    <h1 class="display-4">RESEND VERIFICATION EMAIL</h1>
+</div>
+<div class="container">
+    @if (@Model != null)
+    {
+        @if (@ViewData["ufeedback_failure"] != null)
+        {
+            <div>@ViewData["ufeedback_failure"]</div>
+        }
+        else
+        {
+            <div>Invalid data.</div>
+        }
+    }
+    @if (@ViewData["ufeedback_success"] != null)
+    {
+        <div>@ViewData["ufeedback_success"]</div>
+    }
+    <form asp-controller="Home" asp-action="ResendVerificationEmailRequest" class="needs-validation" novalidate>
+        <div class="form-group">
+            <label asp-for="UsernameOrEmail">Username or Email:</label>
+            <input asp-for="UsernameOrEmail" type="text" maxlength="@Fiar.UserDataModel.Email_MaxLength" class="form-control" placeholder="Enter username or email" value="@Model?.UsernameOrEmail" required autofocus>
+            <div class="valid-feedback">Valid.</div>
+            <div class="invalid-feedback">Please check again this field.</div>
+        </div>
+        <button id="submit-btn" type="submit" class="btn btn-color-dark d-block mx-auto">Submit</button>
+    </form>
+
+    <a asp-area="" asp-controller="Home" asp-action="Login" class="btn btn-color-dark-nobg d-block mx-auto margin-top-50">Go Back</a>
+</div>

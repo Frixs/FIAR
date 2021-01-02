@@ -9,7 +9,14 @@
 <div class="container">
     @if (@Model != null)
     {
-        <div>Invalid credentials.</div>
+        @if (@ViewData["ufeedback_failure"] != null)
+        {
+            <div>@ViewData["ufeedback_failure"]</div>
+        }
+        else
+        {
+            <div>Invalid credentials.</div>
+        }
     }
     <form asp-controller="Home" asp-action="LoginRequest" asp-route-returnUrl="@ViewData["returnUrl"]" class="needs-validation" novalidate>
         <div class="form-group">

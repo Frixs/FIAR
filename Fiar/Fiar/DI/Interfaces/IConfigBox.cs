@@ -21,6 +21,7 @@ namespace Fiar
         string MessageService_Email_MailFrom_Name { get; }
         int Configuration_WebLoginSessionExpires { get; }
         string Configuration_DateTimeFormat_Standard { get; }
+        bool Configuration_VerifyEmailRequired { get; }
 
         /// <summary>
         /// Load configuration

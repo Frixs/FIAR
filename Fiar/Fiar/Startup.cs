@@ -110,6 +110,9 @@ namespace Fiar
 
                 // Make sure users have unique emails
                 options.User.RequireUniqueEmail = true;
+
+                // Require confirmed email
+                options.SignIn.RequireConfirmedEmail = DI.ConfigBox.Configuration_VerifyEmailRequired;
             });
 
             // Add proper cookie request to follow GDPR

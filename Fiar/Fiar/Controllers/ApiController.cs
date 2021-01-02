@@ -12,6 +12,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Fiar.ViewModels;
+using System.Web;
 
 namespace Fiar
 {
@@ -201,9 +202,11 @@ namespace Fiar
                 await mUserManager.AddToRoleAsync(newUser, RoleNames.Player);
 
                 // Generate an email verification code
-                var emailVerificationCode = mUserManager.GenerateEmailConfirmationTokenAsync(newUser);
+                var emailVerificationCode = await mUserManager.GenerateEmailConfirmationTokenAsync(newUser);
+                var confirmationUrl = $"{Request.Scheme}://" + Request.Host.Value + WebRoutes.VerifyEmail.Replace("{uid}", HttpUtility.UrlEncode(newUser.Id)).Replace("{etoken}", HttpUtility.UrlEncode(emailVerificationCode));
 
-                // TODO: Email the user the verification code (api-side) https://youtu.be/iYFP26_zI98?t=2407
+                // Email the user the verification code
+                await AppEmailSender.SendUserEmailVerificationAsync(newUser.Email, confirmationUrl);
 
                 // Return valid response
                 return new ApiResponse();
@@ -744,7 +747,6 @@ namespace Fiar
                 // Return failed response
                 return errorResponse;
 
-            //TODO ---
             var acceptReq = mContext.UserRequests.FirstOrDefault(o => o.Id == model.Id && o.UserId.Equals(model.OpponentUserId) && o.RelatedUserId.Equals(user.Id));
             // Check the request exists
             if (acceptReq != null)
@@ -849,17 +851,6 @@ namespace Fiar
                 HasUnauthorizedUserError = true,
                 ErrorMessage = message
             };
-        }
-
-        /// <summary>
-        /// Sends the given user a new verify email link
-        /// </summary>
-        /// <param name="user">The user to send the link to</param>
-        /// <returns></returns>
-        private async Task SendUserEmailVerificationAsync(ApplicationUser user)
-        {
-            await Task.Delay(1);
-            // TODO: Send email verif wrap https://youtu.be/W2y32Kp2e4E?t=2022
         }
 
         /// <summary>

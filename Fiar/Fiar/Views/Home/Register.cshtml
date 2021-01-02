@@ -18,6 +18,10 @@
             <div>Invalid data.</div>
         }
     }
+    @if (@ViewData["ufeedback_success"] != null)
+    {
+        <div>@ViewData["ufeedback_success"]</div>
+    }
     <form asp-controller="Home" asp-action="RegisterRequest" class="needs-validation" novalidate>
         <div class="form-group">
             <label asp-for="Username">Username:</label>
@@ -47,6 +51,7 @@
         <button id="submit-btn" type="submit" class="btn btn-color-dark d-block mx-auto">Submit</button>
     </form>
 
+    <a asp-area="" asp-controller="Home" asp-action="ResendVerificationEmail" class="btn btn-color-dark-nobg d-block mx-auto margin-top-50">Resend Verification Email</a>
     <a asp-area="" asp-controller="Home" asp-action="Index" class="btn btn-color-dark-nobg d-block mx-auto margin-top-50">Go Back</a>
 </div>
 
