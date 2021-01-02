@@ -97,13 +97,13 @@ namespace Fiar
         /// <summary>
         /// Default constructor
         /// </summary>
-        public GameHub(ApplicationDbContext context, UserManager<ApplicationUser> userManager, IRepository<GameSession> gameRepository, IConfigBox configBox)
+        public GameHub(ApplicationDbContext context, UserManager<ApplicationUser> userManager, ILogger logger, IRepository<GameSession> gameRepository, IConfigBox configBox)
         {
             mContext = context;
             mUserManager = userManager;
             mGameRepository = gameRepository ?? throw new ArgumentNullException(nameof(gameRepository));
             mConfigBox = configBox ?? throw new ArgumentNullException(nameof(configBox));
-            mLogger = FrameworkDI.Logger ?? throw new ArgumentNullException(nameof(mLogger));
+            mLogger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
         #endregion
@@ -300,7 +300,10 @@ namespace Fiar
             }
 
             // Check victory conditions (only the current player can win)
-            if (game.CheckVictory(row, column))
+            bool victory = game.CheckVictory(row, column);
+
+            // On victory process
+            if (victory)
             {
                 // Update result in DB
                 if (game.CurrentPlayer.Id.Equals(game.PlayerTwo.Id))
@@ -320,8 +323,6 @@ namespace Fiar
                 mLogger.LogDebugSource($"Game {game.Id} has ended!");
 
                 await mGameRepository.RemoveItemAsync(game);
-
-                return;
             }
 
             // Add the turn into DB
@@ -330,9 +331,18 @@ namespace Fiar
                 GameId = dbGame.Id,
                 PosX = column,
                 PosY = row,
-                Type = game.CurrentPlayer.Type
+                Type = game.CurrentPlayer.Type,
+                RecordedAt = DateTime.Now
             });
             mContext.SaveChanges();
+
+            // If the game already has a winner, we do need to continue
+            if (victory)
+                return;
+
+            // Check for expanding the board
+            if (game.TryExpandBoard(row, column))
+                await RenderBoardCall(game);
 
             // Move to the next turn
             game.MoveTurnPointerToNextPlayer();

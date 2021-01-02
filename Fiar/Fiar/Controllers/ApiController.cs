@@ -12,6 +12,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Fiar.ViewModels;
+using System.Web;
 
 namespace Fiar
 {
@@ -75,7 +76,7 @@ namespace Fiar
         /// <param name="userManager">The Identity user manager</param>
         /// <param name="signInManager">The Identity sign in manager</param>
         /// <param name="roleManager">The Identity role manager</param>
-        public ApiController(ApplicationDbContext context, UserManager<ApplicationUser> userManager, SignInManager<ApplicationUser> signInManager, RoleManager<IdentityRole> roleManager, IMemoryCache memoryCache, IConfigBox configBox, IRepository<GameSession> gameRepository)
+        public ApiController(ApplicationDbContext context, UserManager<ApplicationUser> userManager, SignInManager<ApplicationUser> signInManager, RoleManager<IdentityRole> roleManager, IMemoryCache memoryCache, ILogger logger, IConfigBox configBox, IRepository<GameSession> gameRepository)
         {
             mContext = context;
             mUserManager = userManager;
@@ -84,7 +85,7 @@ namespace Fiar
             mMemoryCache = memoryCache;
             mConfigBox = configBox ?? throw new ArgumentNullException(nameof(configBox));
             mGameRepository = gameRepository ?? throw new ArgumentNullException(nameof(gameRepository));
-            mLogger = FrameworkDI.Logger ?? throw new ArgumentNullException(nameof(mLogger));
+            mLogger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
         #endregion
@@ -201,9 +202,11 @@ namespace Fiar
                 await mUserManager.AddToRoleAsync(newUser, RoleNames.Player);
 
                 // Generate an email verification code
-                var emailVerificationCode = mUserManager.GenerateEmailConfirmationTokenAsync(newUser);
+                var emailVerificationCode = await mUserManager.GenerateEmailConfirmationTokenAsync(newUser);
+                var confirmationUrl = $"{Request.Scheme}://" + Request.Host.Value + WebRoutes.VerifyEmail.Replace("{uid}", HttpUtility.UrlEncode(newUser.Id)).Replace("{etoken}", HttpUtility.UrlEncode(emailVerificationCode));
 
-                // TODO: Email the user the verification code (api-side) https://youtu.be/iYFP26_zI98?t=2407
+                // Email the user the verification code
+                await AppEmailSender.SendUserEmailVerificationAsync(newUser.Email, confirmationUrl);
 
                 // Return valid response
                 return new ApiResponse();
@@ -259,7 +262,7 @@ namespace Fiar
             var resultUser = UserDataModel.Convert(user);
             
             // Include additional data
-            await IncludeAdditionalDataAsync(resultUser, user, model.IncludeRoleList, model.IncludeOnlineStatus, loggedInUsers, model.IncludeIsFriendWith, model.IncludeIsChallanged);
+            await IncludeAdditionalDataAsync(resultUser, user, model.IncludeRoleList, model.IncludeOnlineStatus, loggedInUsers, model.IncludeIsFriendWith, model.IncludeIsChallanged, model.IncludeIsPlaying);
 
             // Return user details to user
             return new ApiResponse<Result_UserProfileDetailsApiModel>
@@ -346,7 +349,7 @@ namespace Fiar
 
             // Set additional user data
             foreach (var u in friends)
-                await IncludeAdditionalDataAsync(u, user, model.IncludeRoleList, model.IncludeOnlineStatus, loggedInUsers, model.IncludeIsFriendWith, model.IncludeIsChallanged);
+                await IncludeAdditionalDataAsync(u, user, model.IncludeRoleList, model.IncludeOnlineStatus, loggedInUsers, model.IncludeIsFriendWith, model.IncludeIsChallanged, model.IncludeIsPlaying);
 
             // Return successful response
             return new ApiResponse<Result_UserFriendProfilesApiModel>
@@ -397,7 +400,7 @@ namespace Fiar
 
             // Set additional user data
             foreach (var u in users)
-                await IncludeAdditionalDataAsync(u, user, model.IncludeRoleList, model.IncludeOnlineStatus, loggedInUsers, model.IncludeIsFriendWith, model.IncludeIsChallanged);
+                await IncludeAdditionalDataAsync(u, user, model.IncludeRoleList, model.IncludeOnlineStatus, loggedInUsers, model.IncludeIsFriendWith, model.IncludeIsChallanged, model.IncludeIsPlaying);
 
             // Return successful response
             return new ApiResponse<Result_AllUserProfilesApiModel>
@@ -450,7 +453,7 @@ namespace Fiar
             // Set additional user data
             foreach (var u in users)
             {
-                await IncludeAdditionalDataAsync(u, user, model.IncludeRoleList, model.IncludeOnlineStatus, loggedInUsers, model.IncludeIsFriendWith, model.IncludeIsChallanged);
+                await IncludeAdditionalDataAsync(u, user, model.IncludeRoleList, model.IncludeOnlineStatus, loggedInUsers, model.IncludeIsFriendWith, model.IncludeIsChallanged, model.IncludeIsPlaying);
                 if (loggedInUsers.ContainsKey(u.Username))
                     resultUsers.Add(u);
             }
@@ -508,7 +511,7 @@ namespace Fiar
             foreach (var req in requests)
             {
                 var u = UserDataModel.Convert(req.User);
-                await IncludeAdditionalDataAsync(u, user, model.IncludeRoleList, model.IncludeOnlineStatus, loggedInUsers, model.IncludeIsFriendWith, model.IncludeIsChallanged);
+                await IncludeAdditionalDataAsync(u, user, model.IncludeRoleList, model.IncludeOnlineStatus, loggedInUsers, model.IncludeIsFriendWith, model.IncludeIsChallanged, model.IncludeIsPlaying);
                 resultRequests.Add(new UserRequestViewModel
                 { 
                     Id = req.Id,
@@ -744,15 +747,20 @@ namespace Fiar
                 // Return failed response
                 return errorResponse;
 
-            var items = mContext.UserRequests.Where(o => o.UserId.Equals(model.OpponentUserId) && o.RelatedUserId.Equals(user.Id));
-            // Check the requests exist
-            if (items.Count() > 0)
+            var acceptReq = mContext.UserRequests.FirstOrDefault(o => o.Id == model.Id && o.UserId.Equals(model.OpponentUserId) && o.RelatedUserId.Equals(user.Id));
+            // Check the request exists
+            if (acceptReq != null)
             {
-                mContext.UserRequests.RemoveRange(items);
-                // Try to check if there is the same request from the opponent and remove it optionally
-                var opponentItems = mContext.UserRequests.Where(o => o.UserId.Equals(user.Id) && o.RelatedUserId.Equals(model.OpponentUserId));
-                if (opponentItems.Count() > 0)
-                    mContext.UserRequests.RemoveRange(opponentItems);
+                // Remove the request
+                mContext.UserRequests.Remove(acceptReq);
+
+                // Now, check for any desync challange related requests between these two users and delete them, if any
+                var opponentAcceptReqs = mContext.UserRequests.Where(o => o.Type == UserRequestType.AcceptChallange && o.UserId.Equals(user.Id) && o.RelatedUserId.Equals(model.OpponentUserId));
+                if (opponentAcceptReqs.Count() > 0)
+                    mContext.UserRequests.RemoveRange(opponentAcceptReqs);
+                var challangeReqs = mContext.UserRequests.Where(o => o.Type == UserRequestType.Challange && ((o.UserId.Equals(user.Id) && o.RelatedUserId.Equals(model.OpponentUserId)) || (o.UserId.Equals(model.OpponentUserId) && o.RelatedUserId.Equals(user.Id))));
+                if (challangeReqs.Count() > 0)
+                    mContext.UserRequests.RemoveRange(challangeReqs);
 
                 // Save changes
                 mContext.SaveChanges();
@@ -846,17 +854,6 @@ namespace Fiar
         }
 
         /// <summary>
-        /// Sends the given user a new verify email link
-        /// </summary>
-        /// <param name="user">The user to send the link to</param>
-        /// <returns></returns>
-        private async Task SendUserEmailVerificationAsync(ApplicationUser user)
-        {
-            await Task.Delay(1);
-            // TODO: Send email verif wrap https://youtu.be/W2y32Kp2e4E?t=2022
-        }
-
-        /// <summary>
         /// Creates simple passowrd
         /// </summary>
         /// <param name="length">Length of the passowrd</param>
@@ -877,7 +874,7 @@ namespace Fiar
         /// Include additional data into the user dataw model
         /// </summary>
         /// <returns>The same model with additional data included</returns>
-        private async Task IncludeAdditionalDataAsync(UserDataModel user, ApplicationUser appUser, bool roles = false, bool onlineStatus = false, Dictionary<string, DateTime> loggedInUserCache = null, bool isFriendWith = false, bool isChallanged = false)
+        private async Task IncludeAdditionalDataAsync(UserDataModel user, ApplicationUser appUser, bool roles = false, bool onlineStatus = false, Dictionary<string, DateTime> loggedInUserCache = null, bool isFriendWith = false, bool isChallanged = false, bool isPlaying = false)
         {
             if (roles && appUser != null)
             {
@@ -904,6 +901,12 @@ namespace Fiar
                         || o.Type == UserRequestType.Challange && o.UserId.Equals(appUser.Id) && o.RelatedUserId.Equals(user.Id)
                         )
                     .Count() > 0;
+            }
+            if (isPlaying && !user.Id.Equals(appUser.Id))
+            {
+                // Set is playing request status
+                user.IsPlaying = mContext.GameParticipants
+                    .Any(o => o.Game.Result == GameResult.None && o.UserId.Equals(user.Id));
             }
         }
 

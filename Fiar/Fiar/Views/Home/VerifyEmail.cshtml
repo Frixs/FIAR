@@ -1,0 +1,14 @@
+﻿@{
+    ViewData["Title"] = "Verify Email";
+}
+<div class="text-center">
+    <h1 class="display-4">VERIFY EMAIL</h1>
+</div>
+<div class="container">
+    @if (@ViewData["ufeedback_failure"] != null)
+    {
+        <div class="text-center">@ViewData["ufeedback_failure"]</div>
+    }
+
+    <a asp-area="" asp-controller="Home" asp-action="Login" class="btn btn-color-dark-nobg d-block mx-auto margin-top-50">Go Back</a>
+</div>

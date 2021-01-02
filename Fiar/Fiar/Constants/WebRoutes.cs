@@ -18,6 +18,31 @@
         /// <summary>
         /// The route to the web page
         /// </summary>
+        public const string ForgotPassword = "/forgotpassword";
+
+        /// <summary>
+        /// The route to the web page
+        /// </summary>
+        public const string ResetPassword = "/resetpassword/{uid}/{ptoken}";
+
+        /// <summary>
+        /// The route to the web page
+        /// </summary>
+        public const string ResendVerificationEmail = "/resendconfirmationemail";
+
+        /// <summary>
+        /// The route to the web page
+        /// </summary>
+        public const string VerifyEmail = "/verify/email/{uid}/{etoken}";
+
+        /// <summary>
+        /// The route to the web page
+        /// </summary>
+        public const string UserEdit = "/user/edit";
+
+        /// <summary>
+        /// The route to the web page
+        /// </summary>
         public const string ConfigDump = "/config/dump";
 
         /// <summary>
@@ -78,11 +103,41 @@
         /// <summary>
         /// The route to the web request method
         /// </summary>
+        public const string ResendVerificationEmailRequest = "/request/verify/email/resend";
+
+        /// <summary>
+        /// The route to the web request method
+        /// </summary>
+        public const string UserEditProfileDataRequest = "/request/user/profile/edit";
+
+        /// <summary>
+        /// The route to the web request method
+        /// </summary>
+        public const string UserEditProfilePasswordRequest = "/request/user/password/edit";
+
+        /// <summary>
+        /// The route to the web request method
+        /// </summary>
+        public const string ForgetPassowrdRequest = "/request/user/password/forgot";
+
+        /// <summary>
+        /// The route to the web request method
+        /// </summary>
+        public const string ResetPassowrdRequest = "/request/user/password/reset";
+
+        /// <summary>
+        /// The route to the web request method
+        /// </summary>
         public const string UserEditProfileDataAclRequest = "/request/acl/user/profile/edit";
 
         /// <summary>
         /// The route to the web request method
         /// </summary>
         public const string UserEditProfilePasswordAclRequest = "/request/acl/user/password/edit";
+
+        /// <summary>
+        /// The route to the web request method
+        /// </summary>
+        public const string GetGameReplayDataGameRequest = "/request/game/replay/data";
     }
 }

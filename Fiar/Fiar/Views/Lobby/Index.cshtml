@@ -93,7 +93,7 @@
                 type: "POST",
                 dataType: "json",
                 contentType: 'application/json;charset=utf-8',
-                data: JSON.stringify({ IncludeRoleList: false, IncludeOnlineStatus: true, IncludeIsFriendWith: true, IncludeIsChallanged: true }),
+                data: JSON.stringify({ IncludeRoleList: false, IncludeOnlineStatus: true, IncludeIsFriendWith: true, IncludeIsChallanged: true, IncludeIsPlaying: true }),
                 // Success
                 success: function (data) {
                     //console.log(data);
@@ -132,7 +132,7 @@
                 type: "POST",
                 dataType: "json",
                 contentType: 'application/json;charset=utf-8',
-                data: JSON.stringify({ IncludeRoleList: false, IncludeOnlineStatus: true, IncludeIsFriendWith: false, IncludeIsChallanged: false }),
+                data: JSON.stringify({ IncludeRoleList: false, IncludeOnlineStatus: true, IncludeIsFriendWith: false, IncludeIsChallanged: false, IncludeIsPlaying: false }),
                 // Success
                 success: function (data) {
                     $('#requests-tbody').empty();
@@ -178,7 +178,7 @@
                 type: "POST",
                 dataType: "json",
                 contentType: 'application/json;charset=utf-8',
-                data: JSON.stringify({ IncludeRoleList: false, IncludeOnlineStatus: true, IncludeIsFriendWith: true, IncludeIsChallanged: true }),
+                data: JSON.stringify({ IncludeRoleList: false, IncludeOnlineStatus: true, IncludeIsFriendWith: true, IncludeIsChallanged: true, IncludeIsPlaying: true }),
                 // Success
                 success: function (data) {
                     //console.log(data);
@@ -411,7 +411,8 @@
                 '<tr class="--' + (user.isOnline ? 'online' : 'offline') + '" data-uid="' + user.id + '">'
                 + '<td>' + user.nickname + '</td>'
                 + '<td class="status-indicator"><i class="fas fa-circle"></i></td>'
-                + '<td>' + (user.isChallanged == null ? '' : (user.isChallanged ? '' : '<button class="btn btn-dark lobby-table-btn challange-btn">CHALLANGE</button>')) + '</td>'
+                + '<td>' + (user.isPlaying == null ? '' : (user.isPlaying ? '<span data-toggle="tooltip" title="The player is currently playing a game"><i class="fas fa-gamepad"></i></span>' : '')) + '</td>'
+                + '<td>' + (user.isChallanged == null || user.isPlaying == true ? '' : (user.isChallanged ? '' : '<button class="btn btn-dark lobby-table-btn challange-btn">CHALLANGE</button>')) + '</td>'
                 + '<td>' + (user.isFriendWith == null ? '' : (user.isFriendWith ? '<button class="btn btn-danger lobby-table-btn remove-friend-btn"><i class="fas fa-user-minus"></i></button>' : '<button class="btn btn-success lobby-table-btn add-friend-btn"><i class="fas fa-user-plus"></i></button>')) + '</td>'
                 + '</tr>'
             );

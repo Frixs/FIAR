@@ -4,6 +4,11 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using System;
+using Microsoft.EntityFrameworkCore;
+using System.Linq;
+using System.Threading.Tasks;
+using System.Collections.Generic;
+using Fiar.ViewModels;
 
 namespace Fiar
 {
@@ -57,14 +62,14 @@ namespace Fiar
         /// <param name="userManager">The Identity user manager</param>
         /// <param name="signInManager">The Identity sign in manager</param>
         /// <param name="roleManager">The Identity role manager</param>
-        public GameController(ApplicationDbContext context, UserManager<ApplicationUser> userManager, SignInManager<ApplicationUser> signInManager, RoleManager<IdentityRole> roleManager, IConfigBox configBox)
+        public GameController(ApplicationDbContext context, UserManager<ApplicationUser> userManager, SignInManager<ApplicationUser> signInManager, RoleManager<IdentityRole> roleManager, ILogger logger, IConfigBox configBox)
         {
             mContext = context;
             mUserManager = userManager;
             mSignInManager = signInManager;
             mRoleManager = roleManager;
             mConfigBox = configBox ?? throw new ArgumentNullException(nameof(configBox));
-            mLogger = FrameworkDI.Logger ?? throw new ArgumentNullException(nameof(mLogger));
+            mLogger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
         #endregion
@@ -79,9 +84,160 @@ namespace Fiar
             return View();
         }
 
+        /// <summary>
+        /// list of user's games
+        /// </summary>
+        [Route("my")]
+        public async Task<IActionResult> My()
+        {
+            // Get user by the claims
+            var user = await mUserManager.GetUserAsync(HttpContext.User);
+            if (user == null)
+                return Redirect(WebRoutes.Login);
+
+            var participations = mContext.GameParticipants.Where(o => o.Game.Result != GameResult.None && o.UserId.Equals(user.Id))
+                .Include(o => o.Game)
+                .OrderByDescending(o => o.GameId)
+                .Take(10)
+                .ToList();
+
+            var result = new MyGamesViewModel();
+            result.MyGames = new List<MyGameDataViewModel>();
+            result.TotalWins = mContext.GameParticipants
+                .Where(o => ((o.Game.Result == GameResult.PlayerOneWon && o.Type == PlayerType.PlayerOne) || (o.Game.Result == GameResult.PlayerTwoWon && o.Type == PlayerType.PlayerTwo)) && o.UserId.Equals(user.Id))
+                .Count();
+            result.TotalLosses = mContext.GameParticipants
+                .Where(o => o.Game.Result != GameResult.None && o.UserId.Equals(user.Id))
+                .Count() - result.TotalWins;
+
+            foreach (var p in participations)
+            {
+                result.MyGames.Add(new MyGameDataViewModel
+                {
+                    GameId = p.Game.Id,
+                    Victory = p.Type == PlayerType.PlayerTwo ? p.Game.Result == GameResult.PlayerTwoWon : p.Game.Result == GameResult.PlayerOneWon,
+                    Title = $"Game {p.Game.Id}"
+                });
+            }
+
+            return View(result);
+        }
+
+        /// <summary>
+        /// Game replay page
+        /// </summary>
+        [Route("replay")]
+        public IActionResult Replay(long gid)
+        {
+            ViewData["replayGameId"] = gid;
+            return View();
+        }
+
         #endregion
 
         #region Requests
+
+        /// <summary>
+        /// Get replay data based on game ID
+        /// </summary>
+        /// <param name="gid">The game ID</param>
+        [HttpPost]
+        [Route(WebRoutes.GetGameReplayDataGameRequest)]
+        public async Task<GameReplayDataViewModel> GetGameReplayDataRequestAsync([Bind("gid")] long gid)
+        {
+            // Get user by the claims
+            var user = await mUserManager.GetUserAsync(HttpContext.User);
+            if (user == null)
+                return null;
+
+            bool isAllowedToReplay = false;
+            GameReplayDataViewModel result = new GameReplayDataViewModel();
+            Player playerOne = null;
+            Player playerTwo = null;
+            List<GameBoardCellType[][]> boardHistory = new List<GameBoardCellType[][]>();
+
+            // Get the game
+            var game = mContext.Games.Find(gid);
+            if (game == null)
+                return null;
+
+            // Get the participants
+            var participants = mContext.GameParticipants
+                .Where(o => o.GameId == gid)
+                .Include(o => o.User)
+                .ToList();
+            foreach (var p in participants)
+            {
+                if (p.Type == PlayerType.PlayerTwo)
+                {
+                    playerTwo = Player.Convert(p.User, null, PlayerType.PlayerTwo);
+                    result.PlayerTwo = p.User.Nickname;
+                }
+                else
+                {
+                    playerOne = Player.Convert(p.User, null, PlayerType.PlayerOne);
+                    result.PlayerOne = p.User.Nickname;
+                }
+
+                if (p.User.Id.Equals(user.Id))
+                    isAllowedToReplay = true;
+            }
+
+            // Check if the user is allowed to replay
+            if (!isAllowedToReplay)
+                return null;
+
+            // Get all game moves
+            var moves = mContext.GameMoves
+                .Where(o => o.GameId == gid)
+                .OrderBy(o => o.RecordedAt)
+                .ToList();
+
+            // Create replay game session
+            var gameSession = new GameSession(null, null)
+            {
+                PlayerOne = playerOne ?? new Player(PlayerType.PlayerOne) { Id = "id", ConnectionId = null, Nickname = "---" },
+                PlayerTwo = playerTwo ?? new Player(PlayerType.PlayerTwo) { Id = "id", ConnectionId = null, Nickname = "---" },
+                InProgress = true
+            };
+
+            // Save the board state
+            boardHistory.Add(gameSession.Board.Select(a => a.ToArray()).ToArray());
+
+            // Generate gameplay
+            foreach (var m in moves)
+            {
+                // If the current player is not set yet...
+                if (gameSession.CurrentPlayer == null)
+                    // Set it then
+                    gameSession.MoveTurnPointerToNextPlayer();
+
+                // Try to assign player turn into the board
+                gameSession.TryAssignPlayerToCell(m.PosY, m.PosX);
+
+                // Check victory conditions (only the current player can win)
+                if (gameSession.CheckVictory(m.PosY, m.PosX))
+                {
+                    // Save the board state
+                    boardHistory.Add(gameSession.Board.Select(a => a.ToArray()).ToArray());
+                    break;
+                }
+                else
+                {
+                    // Save the board state
+                    boardHistory.Add(gameSession.Board.Select(a => a.ToArray()).ToArray());
+                }
+
+                // Check for expanding the board
+                gameSession.TryExpandBoard(m.PosY, m.PosX);
+
+                // Move to the next turn
+                gameSession.MoveTurnPointerToNextPlayer();
+            }
+            result.BoardHistory = boardHistory;
+
+            return result;
+        }
 
         #endregion
     }

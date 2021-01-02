@@ -29,11 +29,6 @@ namespace Fiar
         /// </summary>
         public PlayerType Type { get; private set; }
 
-        /// <summary>
-        /// Player color (hex)
-        /// </summary>
-        public string Color { get; private set; }
-
         #endregion
 
         #region Constructor
@@ -46,12 +41,10 @@ namespace Fiar
             if (playerType == PlayerType.PlayerOne)
             {
                 Type = PlayerType.PlayerOne;
-                Color = PlayerDefaultColor.One;
             }
             else if (playerType == PlayerType.PlayerTwo)
             {
                 Type = PlayerType.PlayerTwo;
-                Color = PlayerDefaultColor.Two;
             }
             else
                 throw new ArgumentException("Invalid player board cell type!");

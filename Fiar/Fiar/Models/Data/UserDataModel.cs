@@ -147,6 +147,15 @@ namespace Fiar
         [ValidateIgnore]
         public bool? IsChallanged { get; set; }
 
+        /// <summary>
+        /// If not null, it indicates if the user is currently playing a game
+        /// </summary>
+        /// <remarks>
+        ///     Separate value - helper value
+        /// </remarks>
+        [ValidateIgnore]
+        public bool? IsPlaying { get; set; }
+
         #endregion
 
         #region Helpers
