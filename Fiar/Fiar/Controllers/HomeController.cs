@@ -1,6 +1,7 @@
 ﻿using Fiar.Attributes;
 using Fiar.ViewModels;
 using Fiar.ViewModels.Acl;
+using Ixs.DNA;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
@@ -101,6 +102,15 @@ namespace Fiar
         /// </summary>
         [Route(WebRoutes.Register)]
         public IActionResult Register()
+        {
+            return View();
+        }
+
+        /// <summary>
+        /// ForgotPassword page
+        /// </summary>
+        [Route(WebRoutes.ForgotPassword)]
+        public IActionResult ForgotPassword()
         {
             return View();
         }
@@ -390,6 +400,41 @@ namespace Fiar
 
             // Go back to the page
             return RedirectToAction(nameof(UserEdit));
+        }
+
+        /// <summary>
+        /// An login page request
+        /// </summary>
+        /// <param name="returnUrl">The url to return to if successfully logged in</param>
+        /// <param name="user">The user credentials</param>
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [Route(WebRoutes.ForgetPassowrdRequest)]
+        public async Task<IActionResult> ForgetPassowrdRequestAsync([Bind(
+            nameof(Put_LoginCredentialsApiModel.UsernameOrEmail))] Put_LoginCredentialsApiModel data)
+        {
+            if (data == null || data.UsernameOrEmail.IsNullOrEmpty())
+            {
+                ViewData["ufeedback_failure"] = "The user data are invalid!";
+                // Go back to the view
+                return View(nameof(ForgotPassword));
+            }
+
+            // Check if the user exists
+            var user = mContext.Users.FirstOrDefault(o => o.UserName.Equals(data.UsernameOrEmail) || o.Email.Equals(data.UsernameOrEmail));
+            if (user != null)
+            {
+                // TODO send email - create reset link
+            }
+            else
+            {
+                ViewData["ufeedback_failure"] = "The user does not exist.";
+                // Go back to the view
+                return View(nameof(ForgotPassword), data);
+            }
+
+            // Go back to the view
+            return View(nameof(ForgotPassword), data);
         }
 
         #endregion

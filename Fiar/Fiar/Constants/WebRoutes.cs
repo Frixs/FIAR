@@ -18,6 +18,11 @@
         /// <summary>
         /// The route to the web page
         /// </summary>
+        public const string ForgotPassword = "/forgotpassword";
+
+        /// <summary>
+        /// The route to the web page
+        /// </summary>
         public const string UserEdit = "/user/edit";
 
         /// <summary>
@@ -89,6 +94,11 @@
         /// The route to the web request method
         /// </summary>
         public const string UserEditProfilePasswordRequest = "/request/user/password/edit";
+
+        /// <summary>
+        /// The route to the web request method
+        /// </summary>
+        public const string ForgetPassowrdRequest = "/request/user/password/reset";
 
         /// <summary>
         /// The route to the web request method

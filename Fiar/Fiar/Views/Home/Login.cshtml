@@ -13,8 +13,8 @@
     }
     <form asp-controller="Home" asp-action="LoginRequest" asp-route-returnUrl="@ViewData["returnUrl"]" class="needs-validation" novalidate>
         <div class="form-group">
-            <label asp-for="UsernameOrEmail">Username:</label>
-            <input asp-for="UsernameOrEmail" type="text" maxlength="@Fiar.UserDataModel.Username_MaxLength" class="form-control" placeholder="Enter username" value="@Model?.UsernameOrEmail" required autofocus>
+            <label asp-for="UsernameOrEmail">Username or Email:</label>
+            <input asp-for="UsernameOrEmail" type="text" maxlength="@Fiar.UserDataModel.Email_MaxLength" class="form-control" placeholder="Enter username or email" value="@Model?.UsernameOrEmail" required autofocus>
             <div class="valid-feedback">Valid.</div>
             <div class="invalid-feedback">Please check again this field.</div>
         </div>
@@ -31,6 +31,7 @@
         <button type="submit" class="btn btn-color-dark d-block mx-auto">Submit</button>
     </form>
 
+    <a asp-area="" asp-controller="Home" asp-action="ForgotPassword" class="btn btn-color-dark-nobg d-block mx-auto margin-top-50">Forgot Password?</a>
     <a asp-area="" asp-controller="Home" asp-action="Index" class="btn btn-color-dark-nobg d-block mx-auto margin-top-50">Go Back</a>
 </div>
 
