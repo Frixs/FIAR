@@ -571,9 +571,6 @@ namespace Fiar
                 // Go back to the view
                 return View(nameof(ForgotPassword), data);
             }
-
-            // Go back to the view
-            return View(nameof(ForgotPassword), data);
         }
 
         /// <summary>

@@ -1,5 +1,6 @@
 # Project FIAR
-The project is developed according to the attached [assignment](/ASSIGNMENT.md).
+The project is developed according to the attached [assignment](/ASSIGNMENT.md).  
+You may want to follow the [installation instruction](/INSTALL.md).
 
 ## Developed Features
 * login screen

@@ -4,9 +4,11 @@ using Ixs.DNA;
 using Ixs.DNA.AspNet;
 using Microsoft.AspNetCore;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using System;
+using System.IO;
 
 namespace Fiar
 {
@@ -30,6 +32,14 @@ namespace Fiar
 
         public static IWebHostBuilder CreateWebHostBuilder(string[] args)
         {
+            // Build the configuration to adjust enviroment before starting
+            var builder = new ConfigurationBuilder()
+                .SetBasePath(Directory.GetCurrentDirectory())
+                .AddJsonFile("appsettings.json", optional: true, reloadOnChange: true)
+                //.AddJsonFile($"appsettings.{env}.json", optional: true)
+                .AddEnvironmentVariables();
+            var configuration = builder.Build();
+
             return WebHost.CreateDefaultBuilder()
                 // Add DNA Framework
                 .UseDnaFramework(construction =>
@@ -45,10 +55,11 @@ namespace Fiar
 
                     // Rewrite the default logger from DNA Framework to our own
                     construction.Services.AddTransient(provider => provider.GetService<ILoggerFactory>().CreateLogger(typeof(Program).Namespace));
-
+                    
                     // Bind config box
                     construction.Services.AddSingleton<IConfigBox>(new ConfigBox(Framework.Construction.Configuration));
                 })
+                .UseUrls(configuration.GetSection("UseUrlsString").Value.Split(';'))
                 .UseStartup<Startup>();
         }
     }
