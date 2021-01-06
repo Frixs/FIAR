@@ -1,0 +1,24 @@
+﻿version: '3.4'
+
+services:
+  fiar_image:
+    image: fiar:latest
+    depends_on:
+      - "postgres_image"
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "5000:5000"     
+    environment:
+      DB_CONNECTION_STRING: "User ID=postgres;Password=postgres;Host=postgres_image;Port=5432;Database=fiar;"  
+  
+  postgres_image:
+    image: postgres:12-alpine
+    ports:
+      - "5432"
+    restart: always
+    environment:
+      POSTGRES_USER: "postgres"
+      POSTGRES_PASSWORD: "postgres"
+      POSTGRES_DB: "fiar"
