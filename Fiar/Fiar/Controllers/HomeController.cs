@@ -262,41 +262,63 @@ namespace Fiar
         /// An login page request
         /// </summary>
         /// <param name="returnUrl">The url to return to if successfully logged in</param>
-        /// <param name="user">The user credentials</param>
+        /// <param name="model">The user credentials</param>
         [HttpPost]
         [ValidateAntiForgeryToken]
         [Route(WebRoutes.LoginRequest)]
         public async Task<IActionResult> LoginRequestAsync(string returnUrl, [Bind(
             nameof(Put_LoginCredentialsApiModel.UsernameOrEmail) + "," +
             nameof(Put_LoginCredentialsApiModel.Password) + "," +
-            nameof(Put_LoginCredentialsApiModel.StayLoggedIn))] Put_LoginCredentialsApiModel user)
+            nameof(Put_LoginCredentialsApiModel.StayLoggedIn))] Put_LoginCredentialsApiModel model)
         {
             // If model binding is valid...
             if (ModelState.IsValid)
             {
-                // Sign out any previous session
-                await HttpContext.SignOutAsync(IdentityConstants.ApplicationScheme);
-
-                // Sign user in with the valid credentials
-                var result = await mSignInManager.PasswordSignInAsync(user.UsernameOrEmail, user.Password, user.StayLoggedIn, false);
-
-                // If successful...
-                if (result.Succeeded)
+                // Make sure we have a user name
+                if (model?.UsernameOrEmail != null && !string.IsNullOrWhiteSpace(model.UsernameOrEmail))
                 {
-                    // If we have no return URL...
-                    if (string.IsNullOrEmpty(returnUrl))
-                        // Go to home
-                        return RedirectToAction(nameof(Index));
-                    // Otherwise, go to the return url
-                    return Redirect(returnUrl);
-                }
+                    // Validate if the user credentials are correct
 
-                ViewData["ufeedback_failure"] = "Invalid credentials or your email is not verified.";
+                    // Is it an email?
+                    var isEmail = model.UsernameOrEmail.Contains("@");
+                    // Get the user details
+                    var user = isEmail
+                        // Find by email
+                        ? await mUserManager.FindByEmailAsync(model.UsernameOrEmail)
+                        // Find by username
+                        : await mUserManager.FindByNameAsync(model.UsernameOrEmail);
+
+                    // If we failed to find a user...
+                    if (user != null)
+                    {
+                        // If we got here we have a user...
+                        // Let's validate the password
+
+                        // Sign out any previous session
+                        await HttpContext.SignOutAsync(IdentityConstants.ApplicationScheme);
+
+                        // Sign user in with the valid credentials
+                        var result = await mSignInManager.PasswordSignInAsync(user, model.Password, model.StayLoggedIn, false);
+
+                        // If successful...
+                        if (result.Succeeded)
+                        {
+                            // If we have no return URL...
+                            if (string.IsNullOrEmpty(returnUrl))
+                                // Go to home
+                                return RedirectToAction(nameof(Index));
+                            // Otherwise, go to the return url
+                            return Redirect(returnUrl);
+                        }
+
+                        ViewData["ufeedback_failure"] = "Invalid credentials or your email is not verified.";
+                    }
+                }
             }
             // Do not return password
-            user.Password = "";
+            model.Password = "";
             // Otherwise, go to the login view and try log in again
-            return View(nameof(Login), user);
+            return View(nameof(Login), model);
         }
 
         /// <summary>
