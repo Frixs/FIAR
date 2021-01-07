@@ -99,7 +99,7 @@ namespace Fiar
             services.Configure<IdentityOptions>(options =>
             {
                 // Password policy
-                options.Password.RequireDigit = false;
+                options.Password.RequireDigit = true;
                 options.Password.RequiredLength = UserDataModel.Password_MinLength;
                 options.Password.RequireLowercase = true;
                 options.Password.RequireUppercase = false;

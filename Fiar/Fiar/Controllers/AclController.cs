@@ -245,7 +245,6 @@ namespace Fiar
         [Route(WebRoutes.UserEditProfilePasswordAclRequest)]
         public async Task<IActionResult> UserEditProfilePasswordRequestAsync([Bind(
             nameof(UserProfileViewModel.Id) + "," +
-            nameof(UserProfileViewModel.CurrentPassword) + "," +
             nameof(UserProfileViewModel.NewPassword))] UserProfileViewModel user)
         {
             var appRoles = mRoleManager.Roles.ToList();
@@ -261,8 +260,9 @@ namespace Fiar
                     if (dbUser != null)
                     {
                         // Attempt to commit changes to data store
-                        var result = await mUserManager.ChangePasswordAsync(dbUser, user.CurrentPassword, user.NewPassword);
-                        if (result.Succeeded)
+                        var result1 = await mUserManager.RemovePasswordAsync(dbUser);
+                        var result2 = await mUserManager.AddPasswordAsync(dbUser, user.NewPassword);
+                        if (result2.Succeeded)
                         {
                             // Log it
                             mLogger.LogInformation($"User {dbUser.UserName} has successfully changed password!");
@@ -272,7 +272,7 @@ namespace Fiar
                         }
                         else
                         {
-                            ViewData["ufeedback_failure"] = result.Errors.AggregateErrors();
+                            ViewData["ufeedback_failure"] = result2.Errors.AggregateErrors();
                         }
                     }
                     else
