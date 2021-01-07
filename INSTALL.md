@@ -16,8 +16,8 @@
 - *Default port is set to 5000.*
 - *Upon first spin up, the app gives the option to "Initialize" the app in the main-menu. This is one time action that creates default administrator user with username `admin` and password `Admin123456789`.*
 
-- Docker-compose file requires to specify database connection details (`/Fiar/Fiar/appsettings.config`)
-- The app configuration can be set via configuration file: `/Fiar/Fiar/appsettings.config`
+- Docker-compose file requires to specify database connection details (`/Fiar/Fiar/appsettings.json`)
+- The app configuration can be set via configuration file: `/Fiar/Fiar/appsettings.json`
     - Mandatory settings to set:
         - `DatabaseConnection:Technology` - database technology to use
         - `ConnectionStrings:DefaultConnection` - connection string to the database
